@@ -1,0 +1,11 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: rumine
+      POSTGRES_PASSWORD: rumine
+      POSTGRES_DB: rumine
+    ports: ["5432:5432"]
+    volumes: [dbdata:/var/lib/postgresql/data]
+volumes:
+  dbdata:
