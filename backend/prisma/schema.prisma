@@ -1,0 +1,292 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// RU Mine - esquema do banco (gerado a partir de semana3/rumine.dbml)
+// Valores monetários em centavos inteiros.
+// Regras que o Prisma não expressa (criar na migração SQL, ver notas no fim):
+//   - CHECK (saldo_centavos >= 0) em carteira
+//   - débito atômico com SELECT ... FOR UPDATE via $queryRaw dentro de $transaction
+
+enum PerfilUsuario {
+  USUARIO
+  OPERADOR
+  ADMIN
+  MESTRE
+
+  @@map("perfil_usuario")
+}
+
+enum CategoriaUsuario {
+  DISCENTE
+  DOCENTE
+  SERVIDOR
+  VISITANTE
+
+  @@map("categoria_usuario")
+}
+
+enum StatusUsuario {
+  PENDENTE_EMAIL
+  PENDENTE_APROVACAO
+  ATIVO
+  REJEITADO
+  DESATIVADO
+
+  @@map("status_usuario")
+}
+
+enum TipoTransacao {
+  RECARGA
+  DEBITO_REFEICAO
+  ESTORNO
+
+  @@map("tipo_transacao")
+}
+
+enum StatusCobranca {
+  PENDENTE
+  CONFIRMADA
+  RECUSADA
+  EXPIRADA
+
+  @@map("status_cobranca")
+}
+
+enum DecisaoCadastro {
+  APROVADO
+  REJEITADO
+
+  @@map("decisao_cadastro")
+}
+
+enum CategoriaPreco {
+  ESTUDANTE
+  PAE
+  SERVIDOR
+  VISITANTE
+
+  @@map("categoria_preco")
+}
+
+enum ResultadoLeitura {
+  LIBERADO
+  NEGADO_SALDO
+  NEGADO_TOKEN_INVALIDO
+  NEGADO_TOKEN_EXPIRADO
+  NEGADO_TOKEN_USADO
+  NEGADO_CADASTRO_INATIVO
+
+  @@map("resultado_leitura")
+}
+
+enum EnvioUtfpr {
+  PENDENTE
+  ENVIADO
+  FALHA
+
+  @@map("envio_utfpr")
+}
+
+model Usuario {
+  id                 String           @id @default(uuid()) @db.Uuid
+  email              String           @unique
+  senhaHash          String           @map("senha_hash")
+  perfil             PerfilUsuario
+  categoria          CategoriaUsuario
+  identificador      String?          @unique // RA ou SIAPE
+  status             StatusUsuario
+  pae                Boolean          @default(false)
+  ultimaAutenticacao DateTime?        @map("ultima_autenticacao")
+  criadoEm           DateTime         @default(now()) @map("criado_em")
+
+  carteira          Carteira?
+  cobrancas         CobrancaRecarga[]
+  declaracoes       Declaracao[]
+  analises          AnaliseCadastro[] @relation("AnaliseUsuario")
+  analisesFeitas    AnaliseCadastro[] @relation("AnaliseAdmin")
+  cardapiosPublicados Cardapio[]
+  leituras          LeituraAcesso[]   @relation("LeituraUsuario")
+  leiturasOperadas  LeituraAcesso[]   @relation("LeituraOperador")
+  consumos          Consumo[]
+  logs              LogAuditoria[]
+
+  @@map("usuario")
+}
+
+model Carteira {
+  id            String   @id @default(uuid()) @db.Uuid
+  usuarioId     String   @unique @map("usuario_id") @db.Uuid
+  saldoCentavos Int      @map("saldo_centavos") // CHECK (>= 0) na migração
+  atualizadoEm  DateTime @default(now()) @updatedAt @map("atualizado_em")
+
+  usuario    Usuario     @relation(fields: [usuarioId], references: [id])
+  transacoes Transacao[]
+
+  @@map("carteira")
+}
+
+model Transacao {
+  id                String        @id @default(uuid()) @db.Uuid
+  carteiraId        String        @map("carteira_id") @db.Uuid
+  tipo              TipoTransacao
+  valorCentavos     Int           @map("valor_centavos")
+  saldoAposCentavos Int           @map("saldo_apos_centavos")
+  criadaEm          DateTime      @default(now()) @map("criada_em")
+
+  carteira Carteira         @relation(fields: [carteiraId], references: [id])
+  cobranca CobrancaRecarga?
+  consumo  Consumo?
+
+  @@index([carteiraId, criadaEm])
+  @@map("transacao")
+}
+
+model CobrancaRecarga {
+  id            String         @id @default(uuid()) @db.Uuid
+  usuarioId     String         @map("usuario_id") @db.Uuid
+  valorCentavos Int            @map("valor_centavos")
+  status        StatusCobranca
+  provedor      String
+  idExterno     String         @unique @map("id_externo")
+  transacaoId   String?        @unique @map("transacao_id") @db.Uuid
+  criadaEm      DateTime       @default(now()) @map("criada_em")
+  confirmadaEm  DateTime?      @map("confirmada_em")
+
+  usuario   Usuario    @relation(fields: [usuarioId], references: [id])
+  transacao Transacao? @relation(fields: [transacaoId], references: [id])
+
+  @@map("cobranca_recarga")
+}
+
+model Declaracao {
+  id           String   @id @default(uuid()) @db.Uuid
+  usuarioId    String   @map("usuario_id") @db.Uuid
+  arquivoChave String   @map("arquivo_chave")
+  mime         String
+  tamanhoBytes Int      @map("tamanho_bytes")
+  enviadaEm    DateTime @default(now()) @map("enviada_em")
+
+  usuario  Usuario           @relation(fields: [usuarioId], references: [id])
+  analises AnaliseCadastro[]
+
+  @@map("declaracao")
+}
+
+model AnaliseCadastro {
+  id           String          @id @default(uuid()) @db.Uuid
+  usuarioId    String          @map("usuario_id") @db.Uuid
+  declaracaoId String          @map("declaracao_id") @db.Uuid
+  adminId      String          @map("admin_id") @db.Uuid
+  decisao      DecisaoCadastro
+  motivo       String?
+  decididaEm   DateTime        @default(now()) @map("decidida_em")
+
+  usuario    Usuario    @relation("AnaliseUsuario", fields: [usuarioId], references: [id])
+  declaracao Declaracao @relation(fields: [declaracaoId], references: [id])
+  admin      Usuario    @relation("AnaliseAdmin", fields: [adminId], references: [id])
+
+  @@map("analise_cadastro")
+}
+
+model Campus {
+  id   String @id @default(uuid()) @db.Uuid
+  nome String @unique
+
+  precos    PrecoRefeicao[]
+  cardapios Cardapio[]
+  leituras  LeituraAcesso[]
+
+  @@map("campus")
+}
+
+model PrecoRefeicao {
+  id             String         @id @default(uuid()) @db.Uuid
+  campusId       String         @map("campus_id") @db.Uuid
+  categoriaPreco CategoriaPreco @map("categoria_preco")
+  valorCentavos  Int            @map("valor_centavos")
+  vigenteDesde   DateTime       @map("vigente_desde") @db.Date
+
+  campus Campus @relation(fields: [campusId], references: [id])
+
+  @@map("preco_refeicao")
+}
+
+model Cardapio {
+  id           String   @id @default(uuid()) @db.Uuid
+  campusId     String   @map("campus_id") @db.Uuid
+  data         DateTime @db.Date
+  publicadoPor String   @map("publicado_por") @db.Uuid
+  atualizadoEm DateTime @default(now()) @updatedAt @map("atualizado_em")
+
+  campus    Campus         @relation(fields: [campusId], references: [id])
+  publicador Usuario       @relation(fields: [publicadoPor], references: [id])
+  itens     ItemCardapio[]
+
+  @@unique([campusId, data])
+  @@map("cardapio")
+}
+
+model ItemCardapio {
+  id         String @id @default(uuid()) @db.Uuid
+  cardapioId String @map("cardapio_id") @db.Uuid
+  categoria  String
+  descricao  String
+
+  cardapio Cardapio @relation(fields: [cardapioId], references: [id], onDelete: Cascade)
+
+  @@map("item_cardapio")
+}
+
+model LeituraAcesso {
+  id          String           @id @default(uuid()) @db.Uuid
+  usuarioId   String?          @map("usuario_id") @db.Uuid
+  operadorId  String           @map("operador_id") @db.Uuid
+  campusId    String           @map("campus_id") @db.Uuid
+  tokenJti    String           @unique @map("token_jti") // impede reuso do QR Code
+  resultado   ResultadoLeitura
+  lidaEm      DateTime         @default(now()) @map("lida_em")
+
+  usuario  Usuario?  @relation("LeituraUsuario", fields: [usuarioId], references: [id])
+  operador Usuario   @relation("LeituraOperador", fields: [operadorId], references: [id])
+  campus   Campus    @relation(fields: [campusId], references: [id])
+  consumo  Consumo?
+
+  @@map("leitura_acesso")
+}
+
+model Consumo {
+  id                   String         @id @default(uuid()) @db.Uuid
+  leituraId            String         @unique @map("leitura_id") @db.Uuid
+  usuarioId            String         @map("usuario_id") @db.Uuid
+  valorCobradoCentavos Int            @map("valor_cobrado_centavos")
+  categoriaPreco       CategoriaPreco @map("categoria_preco")
+  transacaoId          String?        @unique @map("transacao_id") @db.Uuid // nulo para PAE (isento)
+  envioUtfpr           EnvioUtfpr     @map("envio_utfpr")
+  consumidoEm          DateTime       @default(now()) @map("consumido_em")
+
+  leitura   LeituraAcesso @relation(fields: [leituraId], references: [id])
+  usuario   Usuario       @relation(fields: [usuarioId], references: [id])
+  transacao Transacao?    @relation(fields: [transacaoId], references: [id])
+
+  @@map("consumo")
+}
+
+model LogAuditoria {
+  id         String   @id @default(uuid()) @db.Uuid
+  atorId     String?  @map("ator_id") @db.Uuid
+  acao       String
+  entidade   String
+  entidadeId String?  @map("entidade_id")
+  detalhes   Json?
+  criadoEm   DateTime @default(now()) @map("criado_em")
+
+  ator Usuario? @relation(fields: [atorId], references: [id])
+
+  @@map("log_auditoria")
+}
