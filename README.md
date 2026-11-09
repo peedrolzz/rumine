@@ -77,8 +77,6 @@ Como o trabalho está organizado:
 
 ## Como executar
 
-## Como executar
-
 Pré-requisitos: Node.js LTS, Docker Desktop (aberto) e Git. O passo a passo completo está no [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```bash
