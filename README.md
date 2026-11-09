@@ -77,7 +77,26 @@ Como o trabalho está organizado:
 
 ## Como executar
 
-A ser preenchido durante o desenvolvimento, com: requisitos (Node.js, Docker), variáveis de ambiente (banco, chave de assinatura do QR Code, credenciais do Mercado Pago, Resend e Supabase), comandos para subir o banco, rodar as migrações do Prisma, iniciar a API e a PWA, rodar os testes e fazer o deploy no Fly.io.
+## Como executar
+
+Pré-requisitos: Node.js LTS, Docker Desktop (aberto) e Git. O passo a passo completo está no [CONTRIBUTING.md](CONTRIBUTING.md).
+
+```bash
+# 1. Banco de dados (na raiz do projeto)
+docker compose up -d db
+
+# 2. Backend (terminal 1)
+cd backend
+copy .env.example .env      # Mac/Linux: cp .env.example .env
+npm install
+npx prisma migrate dev
+npm run dev                 # http://localhost:3000/health
+
+# 3. Frontend (terminal 2)
+cd frontend
+npm install
+npm run dev                 # http://localhost:5173
+```
 
 ## Equipe
 
