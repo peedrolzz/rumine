@@ -37,27 +37,28 @@ cd rumine
 
 ## 4. Instalar e executar
 
-> Os comandos abaixo valem depois que a fundação do projeto (estrutura do repositório, Docker e esquema do banco) for mesclada. Os nomes exatos das pastas e scripts serão confirmados no README pelo responsável pela fundação.
+Abra o **Docker Desktop** antes de começar. Use dois terminais: um para o backend e um para o frontend.
 
 ```bash
-# 1. variáveis de ambiente
-cp .env.example .env        # ajuste os valores locais
-
-# 2. banco de dados local (PostgreSQL)
+# Na raiz do projeto: banco de dados (PostgreSQL)
 docker compose up -d db
 
-# 3. dependências
+# Terminal 1: backend
+cd backend
+cp .env.example .env          # no Windows: copy .env.example .env
 npm install
+npx prisma migrate dev        # cria as tabelas
+npm run dev                   # http://localhost:3000/health
 
-# 4. migrações e dados de teste
-npx prisma migrate dev
-npm run seed                # se existir
-
-# 5. subir a aplicação
-npm run dev
+# Terminal 2: frontend
+cd frontend
+npm install
+npm run dev                   # http://localhost:5173
 ```
 
-Nunca faça commit do arquivo `.env`, de chaves de API ou de qualquer segredo. Use apenas o `.env.example`, sem valores reais.
+O arquivo `.env` do backend deve conter `DATABASE_URL="postgresql://rumine:rumine@localhost:5432/rumine"`. Nunca faça commit do `.env`.
+
+Os avisos amarelos do npm sobre `install-scripts` e as vulnerabilidades "moderate" podem ser ignorados por enquanto. **Não rode `npm audit fix --force`.**
 
 ## 5. Fluxo de trabalho por história
 
@@ -161,4 +162,6 @@ Em caso de conflito, resolva nos arquivos marcados, rode a aplicação e os test
 | Fiz commit na `main` sem querer | Não faça push. Crie uma branch no mesmo ponto (`git checkout -b minha-branch`) e peça ajuda para restaurar a `main` local. |
 | Subi um segredo por engano | Avise a equipe na hora. O segredo deve ser revogado e trocado; apagar o commit não basta. |
 | Não sei qual é o meu issue | Veja a tabela de distribuição e o quadro do GitHub Projects (filtre pelo seu usuário). |
-| Preciso mudar o banco | Altere o `schema.prisma` e gere uma migração (`npx prisma migrate dev --name descricao`). Avise o Arquiteto, pois o esquema é compartilhado. |
+| Preciso mudar o banco | Altere `backend/prisma/schema.prisma` e gere uma migração (`npx prisma migrate dev --name descricao`). Avise o Arquiteto, pois o esquema é compartilhado. Regras que o Prisma não expressa (como CHECK) vão no `migration.sql` gerado, antes de aplicar (`--create-only`). |
+| O Prisma não conecta | Confira se o Docker Desktop está aberto, se `docker ps` lista o container do banco e se o `.env` do backend está correto. |
+| Erro de tipos com o MUI (`p`, `mt` etc. no `Box`) | Use `sx={{ p: 2 }}` em vez do atalho direto. |
