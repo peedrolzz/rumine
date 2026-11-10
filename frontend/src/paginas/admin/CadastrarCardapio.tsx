@@ -2,22 +2,10 @@
 import { useEffect, useState } from "react";
 import { Alert, Box, Button, CircularProgress, Stack, TextField, Typography } from "@mui/material";
 import { ErroApi, requisitar } from "../../api/cliente";
+import { CAMPOS, type Campo, type Cardapio } from "../../cardapio/campos";
 import { aplicarMascara, hoje, hojeIso, paraIso } from "../../utils/data";
 
-const CAMPOS = [
-  { chave: "proteinaAnimal", rotulo: "Proteína animal" },
-  { chave: "proteinaVegetariana", rotulo: "Proteína vegetariana" },
-  { chave: "carboidrato1", rotulo: "Carboidrato 1" },
-  { chave: "carboidrato2", rotulo: "Carboidrato 2" },
-  { chave: "carboidrato3", rotulo: "Carboidrato 3" },
-  { chave: "salada1", rotulo: "Salada 1" },
-  { chave: "salada2", rotulo: "Salada 2" },
-  { chave: "sobremesa", rotulo: "Sobremesa" },
-  { chave: "suco", rotulo: "Suco" },
-] as const;
-
-type Campo = (typeof CAMPOS)[number]["chave"];
-type Formulario = Record<Campo, string>;
+type Formulario = Cardapio;
 
 const VAZIO = Object.fromEntries(CAMPOS.map((c) => [c.chave, ""])) as Formulario;
 
@@ -28,6 +16,9 @@ export default function CadastrarCardapio() {
   const [salvando, setSalvando] = useState(false);
   const [existe, setExiste] = useState(false);
   const [erroGeral, setErroGeral] = useState<string | null>(null);
+  // Falha ao carregar a data: sem saber se já existe cardápio, salvar poderia sobrescrevê-lo sem aviso.
+  const [erroCarga, setErroCarga] = useState<string | null>(null);
+  const [tentativa, setTentativa] = useState(0);
   const [erroCampo, setErroCampo] = useState<{ campo: string; mensagem: string } | null>(null);
   const [sucesso, setSucesso] = useState(false);
 
@@ -52,22 +43,29 @@ export default function CadastrarCardapio() {
         setExiste(false);
         // 404 = ainda não há cardápio nesta data (estado vazio, não é erro).
         if (!(e instanceof ErroApi && e.status === 404)) {
-          setErroGeral(e instanceof ErroApi ? e.message : "Algo deu errado. Tente novamente.");
+          setErroCarga(e instanceof ErroApi ? e.message : "Algo deu errado. Tente novamente.");
         }
       })
       .finally(() => !cancelado && setCarregando(false));
     return () => {
       cancelado = true;
     };
-  }, [dataIso]);
+  }, [dataIso, tentativa]);
 
   const trocarData = (valor: string) => {
     const texto = aplicarMascara(valor);
     setDataTexto(texto);
     setCarregando(Boolean(paraIso(texto)));
     setErroGeral(null);
+    setErroCarga(null);
     setErroCampo(null);
     setSucesso(false);
+  };
+
+  const tentarDeNovo = () => {
+    setErroCarga(null);
+    setCarregando(true);
+    setTentativa((n) => n + 1);
   };
 
   const alterar = (campo: Campo, valor: string) => {
@@ -94,6 +92,8 @@ export default function CadastrarCardapio() {
       setSalvando(false);
     }
   };
+
+  const bloqueado = carregando || salvando || !dataIso || passada || Boolean(erroCarga);
 
   const erroData = dataIncompleta
     ? "Informe uma data válida, no formato dd/mm/aaaa."
@@ -129,11 +129,24 @@ export default function CadastrarCardapio() {
             Esta data já passou. Não é possível cadastrar nem editar o cardápio de dias anteriores a hoje.
           </Alert>
         )}
-        {dataIso && !passada && !carregando && !existe && !erroGeral && (
+        {dataIso && !passada && !carregando && !existe && !erroCarga && (
           <Alert severity="info">Ainda não há cardápio para esta data. Preencha os campos e salve.</Alert>
         )}
         {dataIso && !passada && !carregando && existe && !sucesso && (
           <Alert severity="info">Já existe cardápio para esta data. Ao salvar, ele será substituído.</Alert>
+        )}
+
+        {erroCarga && (
+          <Alert
+            severity="error"
+            action={
+              <Button color="inherit" onClick={tentarDeNovo}>
+                Tentar de novo
+              </Button>
+            }
+          >
+            {erroCarga}
+          </Alert>
         )}
 
         {CAMPOS.map(({ chave, rotulo }) => (
@@ -142,7 +155,7 @@ export default function CadastrarCardapio() {
             label={rotulo}
             value={form[chave]}
             onChange={(e) => alterar(chave, e.target.value)}
-            disabled={carregando || salvando || !dataIso || passada}
+            disabled={bloqueado}
             required
             error={erroCampo?.campo === chave}
             helperText={erroCampo?.campo === chave ? erroCampo.mensagem : undefined}
@@ -152,7 +165,7 @@ export default function CadastrarCardapio() {
         {erroGeral && <Alert severity="error">{erroGeral}</Alert>}
         {sucesso && <Alert severity="success">Cardápio salvo! Os usuários já podem vê-lo.</Alert>}
 
-        <Button type="submit" variant="contained" size="large" disabled={carregando || salvando || !dataIso || passada}>
+        <Button type="submit" variant="contained" size="large" disabled={bloqueado}>
           {salvando ? "Salvando..." : "Salvar cardápio"}
         </Button>
       </Stack>
