@@ -12,7 +12,7 @@ export const USUARIOS_DEV: Record<PerfilUsuario, string> = {
 
 export function identificadorDev(): Identificador | undefined {
   const perfil = process.env.DEV_USUARIO as PerfilUsuario | undefined;
-  if (process.env.NODE_ENV === "production" || !perfil || !(perfil in USUARIOS_DEV)) {
+  if (process.env.NODE_ENV === "production" || !perfil || !Object.hasOwn(USUARIOS_DEV, perfil)) {
     return undefined;
   }
   return (request) => {

@@ -25,13 +25,27 @@ export const corpoCardapio = z.object(
     ChaveCardapio,
     ReturnType<typeof obrigatorio>
   >,
+  { error: "Corpo da requisição inválido." },
 );
+
+// Anos aceitos: o PostgreSQL não aceita ano 0 e datas muito distantes só poluem os dados.
+const ANO_MIN = 2000;
+const ANO_MAX = 2100;
+
+/** Confere se "aaaa-mm-dd" é uma data real dentro do intervalo. Nunca lança exceção. */
+function dataReal(texto: string): boolean {
+  const [ano, mes, dia] = texto.split("-").map(Number);
+  if (ano === undefined || mes === undefined || dia === undefined) return false;
+  if (!(ano >= ANO_MIN && ano <= ANO_MAX)) return false;
+  const d = new Date(Date.UTC(ano, mes - 1, dia));
+  return d.getUTCFullYear() === ano && d.getUTCMonth() === mes - 1 && d.getUTCDate() === dia;
+}
 
 export const paramsData = z.object({
   data: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida. Use o formato aaaa-mm-dd.")
-    .refine((d) => new Date(`${d}T00:00:00.000Z`).toISOString().startsWith(d), "Data inválida."),
+    .refine(dataReal, `Data inválida. Informe uma data real entre os anos ${ANO_MIN} e ${ANO_MAX}.`),
 });
 
 export type CorpoCardapio = z.infer<typeof corpoCardapio>;

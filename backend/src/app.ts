@@ -1,4 +1,4 @@
-import Fastify from "fastify";
+import Fastify, { type FastifyError } from "fastify";
 import cors from "@fastify/cors";
 import type { Identificador } from "./shared/auth.js";
 import { hojeNoBrasil } from "./shared/data.js";
@@ -21,6 +21,16 @@ export async function buildApp({ cardapioRepo, identificar, hoje = hojeNoBrasil,
     origin: process.env.FRONTEND_ORIGIN ?? "http://localhost:5173",
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  });
+
+  // Erros sempre no formato { mensagem } em português; detalhes internos só no log.
+  app.setErrorHandler((erro: FastifyError, request, reply) => {
+    const status = erro.statusCode && erro.statusCode >= 400 ? erro.statusCode : 500;
+    if (status >= 500) {
+      request.log.error(erro);
+      return reply.code(500).send({ mensagem: "Erro interno. Tente novamente em instantes." });
+    }
+    return reply.code(status).send({ mensagem: "Requisição inválida." });
   });
 
   app.decorateRequest("usuario");

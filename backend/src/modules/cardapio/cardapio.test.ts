@@ -143,4 +143,134 @@ describe("cardápio", () => {
     expect((await salvar("ADMIN", cardapio, "2026-11-10")).statusCode).toBe(200);
     expect((await salvar("ADMIN", cardapio, "2026-12-01")).statusCode).toBe(200);
   });
+
+  describe("entradas inesperadas", () => {
+    const put = (payload: unknown, headers: Record<string, string> = { "x-perfil": "ADMIN" }, data = DATA) =>
+      app.inject({ method: "PUT", url: `/cardapios/${data}`, payload: payload as never, headers });
+
+    it("remove espaços nas pontas ao gravar", async () => {
+      await put(Object.fromEntries(CHAVES.map((c) => [c, `  ${c}  `])));
+      const lido = (await consultar("USUARIO")).json();
+      for (const c of CHAVES) expect(lido[c]).toBe(c);
+    });
+
+    it("ignora campos extras e o autor vem da sessão, nunca do corpo", async () => {
+      const r = await put({ ...cardapio, publicadoPor: "outro-id", itens: [] });
+      expect(r.statusCode).toBe(200);
+      expect(r.json()).not.toHaveProperty("publicadoPor");
+      expect(repo.publicadoPor.get(DATA)).toBe("id-ADMIN");
+    });
+
+    it("aceita exatamente 200 caracteres e recusa 201, indicando o campo", async () => {
+      expect((await put({ ...cardapio, suco: "a".repeat(200) })).statusCode).toBe(200);
+      const longo = await put({ ...cardapio, suco: "a".repeat(201) });
+      expect(longo.statusCode).toBe(400);
+      expect(longo.json().campo).toBe("suco");
+      expect(longo.json().mensagem).toMatch(/no máximo 200/);
+    });
+
+    it("recusa valores que não são texto", async () => {
+      for (const valor of [123, true, null, ["x"], { a: 1 }]) {
+        const r = await put({ ...cardapio, salada1: valor });
+        expect(r.statusCode).toBe(400);
+        expect(r.json().campo).toBe("salada1");
+      }
+    });
+
+    it("recusa corpo ausente, null, array e texto com mensagem em português", async () => {
+      for (const corpo of [undefined, null, [], "texto"]) {
+        const r = await app.inject({
+          method: "PUT",
+          url: `/cardapios/${DATA}`,
+          headers: { "x-perfil": "ADMIN", "content-type": "application/json" },
+          ...(corpo === undefined ? {} : { payload: JSON.stringify(corpo) }),
+        });
+        expect(r.statusCode).toBe(400);
+        expect(r.json().mensagem).not.toMatch(/Invalid|expected|received/i);
+      }
+    });
+
+    it("JSON inválido e tipo de conteúdo errado respondem { mensagem } em português", async () => {
+      const quebrado = await app.inject({
+        method: "PUT",
+        url: `/cardapios/${DATA}`,
+        headers: { "x-perfil": "ADMIN", "content-type": "application/json" },
+        payload: "{quebrado",
+      });
+      expect(quebrado.statusCode).toBe(400);
+      expect(quebrado.json()).toEqual({ mensagem: "Requisição inválida." });
+
+      const semTipo = await app.inject({
+        method: "PUT",
+        url: `/cardapios/${DATA}`,
+        headers: { "x-perfil": "ADMIN", "content-type": "application/x-www-form-urlencoded" },
+        payload: "oi",
+      });
+      expect(semTipo.statusCode).toBe(415);
+      expect(semTipo.json()).toEqual({ mensagem: "Requisição inválida." });
+    });
+
+    it.each(["2026-13-01", "2026-00-10", "2026-11-31", "2026-11-1", "26-11-10", "10%2F11%2F2026", "abc", "2026-11-10x"])(
+      "recusa a data inválida %j",
+      async (data) => {
+        const g = await consultar("ADMIN", data);
+        expect(g.statusCode).toBe(400);
+        expect(g.json().campo).toBe("data");
+        expect((await put(cardapio, undefined, data)).statusCode).toBe(400);
+      },
+    );
+
+    it.each(["0000-01-01", "1999-12-31", "2101-01-01", "9999-12-31"])(
+      "recusa data fora do intervalo razoável (%s)",
+      async (data) => {
+        const g = await consultar("ADMIN", data);
+        expect(g.statusCode).toBe(400);
+        expect(g.json().campo).toBe("data");
+        expect((await put(cardapio, undefined, data)).statusCode).toBe(400);
+      },
+    );
+
+    it("aceita 29/02 em ano bissexto e recusa em ano comum", async () => {
+      const bissexto = await buildApp({ cardapioRepo: repo, identificar, hoje: () => "2028-01-01" });
+      const ok = await bissexto.inject({
+        method: "PUT",
+        url: "/cardapios/2028-02-29",
+        payload: cardapio,
+        headers: { "x-perfil": "ADMIN" },
+      });
+      expect(ok.statusCode).toBe(200);
+      expect((await put(cardapio, undefined, "2027-02-29")).statusCode).toBe(400);
+    });
+  });
+
+  it("erro interno vira 500 genérico, sem vazar detalhes do banco", async () => {
+    const quebrado: CardapioRepositorio = {
+      async salvar() {
+        throw new Error("password authentication failed for user rumine /caminho/secreto");
+      },
+      async buscar() {
+        throw new Error("segredo interno");
+      },
+    };
+    const a = await buildApp({ cardapioRepo: quebrado, identificar, hoje: () => DATA });
+    const h = { "x-perfil": "ADMIN" };
+    const put = await a.inject({ method: "PUT", url: `/cardapios/${DATA}`, payload: cardapio, headers: h });
+    const get = await a.inject({ method: "GET", url: `/cardapios/${DATA}`, headers: h });
+    for (const r of [put, get]) {
+      expect(r.statusCode).toBe(500);
+      expect(r.json()).toEqual({ mensagem: "Erro interno. Tente novamente em instantes." });
+      expect(r.body).not.toMatch(/segredo|secreto|password/);
+    }
+  });
+
+  it("perfil sem permissão recebe 403 antes de qualquer validação do corpo", async () => {
+    const r = await app.inject({ method: "PUT", url: `/cardapios/${DATA}`, headers: { "x-perfil": "USUARIO" }, payload: {} });
+    expect(r.statusCode).toBe(403);
+  });
+
+  it("cadastro recusado por data passada não grava nada", async () => {
+    const r = await salvar("ADMIN", cardapio, "2026-11-01");
+    expect(r.statusCode).toBe(400);
+    expect(repo.publicadoPor.has("2026-11-01")).toBe(false);
+  });
 });
