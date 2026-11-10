@@ -7,6 +7,7 @@ import RestaurantIcon from "@mui/icons-material/Restaurant";
 import { Link, Route, Routes, useLocation } from "react-router-dom";
 import CadastrarCardapio from "./paginas/admin/CadastrarCardapio";
 import Cardapio from "./paginas/usuario/Cardapio";
+import Historico from "./paginas/usuario/Historico";
 
 const Pagina = ({ titulo }: { titulo: string }) => (
   <Box sx={{ p: 2 }}><Typography variant="h5">{titulo}</Typography></Box>
@@ -26,7 +27,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Pagina titulo="Início" />} />
         <Route path="/recarga" element={<Pagina titulo="Recarregar" />} />
-        <Route path="/historico" element={<Pagina titulo="Histórico" />} />
+        <Route path="/historico" element={<Historico />} />
         <Route path="/cardapio" element={<Cardapio />} />
         <Route path="/admin/cardapio" element={<CadastrarCardapio />} />
       </Routes>
