@@ -29,7 +29,10 @@ export default function App() {
         <Route path="/cardapio" element={<Pagina titulo="Cardápio" />} />
         <Route path="/admin/cardapio" element={<CadastrarCardapio />} />
       </Routes>
-      <Paper sx={{ position: "fixed", bottom: 0, left: 0, right: 0 }} elevation={3}>
+      <Paper
+        sx={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: (t) => t.zIndex.appBar, bgcolor: "background.paper" }}
+        elevation={3}
+      >
         <BottomNavigation value={pathname} sx={{ maxWidth: 480, mx: "auto" }}>
           {abas.map((a) => (
             <BottomNavigationAction key={a.to} component={Link} to={a.to}
