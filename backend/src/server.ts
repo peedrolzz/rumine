@@ -1,4 +1,14 @@
-import Fastify from "fastify";
-const app = Fastify({ logger: true });
-app.get("/health", async () => ({ status: "ok" }));
-app.listen({ port: 3000, host: "0.0.0.0" });
+import "dotenv/config";
+import { buildApp } from "./app.js";
+import { prisma } from "./shared/prisma.js";
+import { identificadorDev } from "./shared/usuariosDev.js";
+import { criarRepositorioPrisma } from "./modules/cardapio/repositorio.js";
+
+const identificar = identificadorDev();
+const app = await buildApp({
+  cardapioRepo: criarRepositorioPrisma(prisma),
+  identificar,
+  logger: true,
+});
+if (identificar) app.log.warn(`Modo desenvolvimento: usuário fixo ${process.env.DEV_USUARIO} (sem login real).`);
+await app.listen({ port: 3000, host: "0.0.0.0" });
