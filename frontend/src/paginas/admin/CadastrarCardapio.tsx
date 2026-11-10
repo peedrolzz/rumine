@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Alert, Box, Button, CircularProgress, Stack, TextField, Typography } from "@mui/material";
 import { ErroApi, requisitar } from "../../api/cliente";
+import { aplicarMascara, hoje, hojeIso, paraIso } from "../../utils/data";
 
 const CAMPOS = [
   { chave: "proteinaAnimal", rotulo: "Proteína animal" },
@@ -20,38 +21,8 @@ type Formulario = Record<Campo, string>;
 
 const VAZIO = Object.fromEntries(CAMPOS.map((c) => [c.chave, ""])) as Formulario;
 
-// Datas: a tela usa dd/mm/aaaa; a API usa aaaa-mm-dd.
-const dois = (n: number) => String(n).padStart(2, "0");
-const hoje = () => {
-  const d = new Date();
-  return `${dois(d.getDate())}/${dois(d.getMonth() + 1)}/${d.getFullYear()}`;
-};
-
-const hojeIso = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${dois(d.getMonth() + 1)}-${dois(d.getDate())}`;
-};
-
-/** Converte "dd/mm/aaaa" em "aaaa-mm-dd"; devolve null se incompleta ou inexistente (ex.: 31/02). */
-function paraIso(texto: string): string | null {
-  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(texto);
-  if (!m) return null;
-  const [, dia, mes, ano] = m;
-  const d = new Date(Number(ano), Number(mes) - 1, Number(dia));
-  const valida = d.getFullYear() === Number(ano) && d.getMonth() === Number(mes) - 1 && d.getDate() === Number(dia);
-  return valida ? `${ano}-${mes}-${dia}` : null;
-}
-
-/** Máscara: aceita só números e insere as barras (dd/mm/aaaa). */
-function aplicarMascara(texto: string): string {
-  const n = texto.replace(/\D/g, "").slice(0, 8);
-  if (n.length <= 2) return n;
-  if (n.length <= 4) return `${n.slice(0, 2)}/${n.slice(2)}`;
-  return `${n.slice(0, 2)}/${n.slice(2, 4)}/${n.slice(4)}`;
-}
-
 export default function CadastrarCardapio() {
-  const [dataTexto, setDataTexto] = useState(hoje());
+  const [dataTexto, setDataTexto] = useState(() => hoje());
   const [form, setForm] = useState<Formulario>(VAZIO);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
