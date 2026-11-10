@@ -1,17 +1,8 @@
-import type { FastifyInstance, FastifyReply } from "fastify";
-import type { ZodType } from "zod";
+import type { FastifyInstance } from "fastify";
 import { exigirPerfil } from "../../shared/auth.js";
+import { validar } from "../../shared/validacao.js";
 import { corpoCardapio, paramsData } from "./esquemas.js";
 import type { ServicoCardapio } from "./servico.js";
-
-// Valida a entrada; em caso de erro responde 400 indicando o campo.
-function validar<T>(esquema: ZodType<T>, dado: unknown, reply: FastifyReply): T | undefined {
-  const r = esquema.safeParse(dado);
-  if (r.success) return r.data;
-  const erro = r.error.issues[0];
-  reply.code(400).send({ campo: String(erro?.path[0] ?? ""), mensagem: erro?.message ?? "Dados inválidos." });
-  return undefined;
-}
 
 export function rotasCardapio(servico: ServicoCardapio, hoje: () => string) {
   return async (app: FastifyInstance) => {
