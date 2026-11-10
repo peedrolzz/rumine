@@ -15,6 +15,16 @@ const simular = (r: Response | Error) => {
 
 afterEach(() => vi.unstubAllGlobals());
 
+// Executa a requisição esperando falha e devolve o erro já tipado.
+async function falhar(): Promise<ErroApi> {
+  try {
+    await requisitar("/x");
+  } catch (e) {
+    return e as ErroApi;
+  }
+  throw new Error("A requisição deveria ter falhado.");
+}
+
 describe("requisitar", () => {
   it("devolve o JSON em caso de sucesso e envia o cookie de sessão", async () => {
     const f = simular(resposta(200, { ok: true }));
@@ -36,21 +46,21 @@ describe("requisitar", () => {
 
   it("erro com campo vira ErroApi com status, campo e mensagem da API", async () => {
     simular(resposta(400, { campo: "suco", mensagem: 'Preencha o campo "Suco".' }));
-    const erro = await requisitar("/x").catch((e: unknown) => e as ErroApi);
+    const erro = await falhar();
     expect(erro).toBeInstanceOf(ErroApi);
     expect(erro).toMatchObject({ status: 400, campo: "suco", message: 'Preencha o campo "Suco".' });
   });
 
   it("404 mantém o status (a tela usa isso para o estado vazio)", async () => {
     simular(resposta(404, { mensagem: "O cardápio desta data ainda não foi publicado." }));
-    const erro = await requisitar("/x").catch((e: unknown) => e as ErroApi);
+    const erro = await falhar();
     expect(erro.status).toBe(404);
     expect(erro.campo).toBeUndefined();
   });
 
   it("corpo de erro que não é JSON (ex.: página HTML de um proxy) dá mensagem genérica em português", async () => {
     simular(resposta(502, undefined, "<html>Bad Gateway</html>"));
-    const erro = await requisitar("/x").catch((e: unknown) => e as ErroApi);
+    const erro = await falhar();
     expect(erro).toBeInstanceOf(ErroApi);
     expect(erro.status).toBe(502);
     expect(erro.message).toBe("Algo deu errado. Tente novamente.");
@@ -58,13 +68,13 @@ describe("requisitar", () => {
 
   it("erro sem mensagem na resposta usa a mensagem genérica", async () => {
     simular(resposta(500, {}));
-    const erro = await requisitar("/x").catch((e: unknown) => e as ErroApi);
+    const erro = await falhar();
     expect(erro.message).toBe("Algo deu errado. Tente novamente.");
   });
 
   it("servidor fora do ar (falha de rede) vira ErroApi status 0 sem mensagem técnica", async () => {
     simular(new TypeError("Failed to fetch"));
-    const erro = await requisitar("/x").catch((e: unknown) => e as ErroApi);
+    const erro = await falhar();
     expect(erro).toBeInstanceOf(ErroApi);
     expect(erro.status).toBe(0);
     expect(erro.message).toMatch(/conectar ao servidor/);
