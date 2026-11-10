@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aplicarMascara, dentroDoIntervalo, diaDaSemana, hoje, hojeIso, paraBr, paraIso, somarDias } from "./data";
+import { aplicarMascara, dentroDoIntervalo, diaDaSemana, formatarDataHora, hoje, hojeIso, paraBr, paraIso, somarDias } from "./data";
 
 describe("aplicarMascara", () => {
   it.each([
@@ -156,5 +156,21 @@ describe("dentroDoIntervalo", () => {
   it("os limites batem com as setas: um dia antes do mínimo e depois do máximo ficam fora", () => {
     expect(dentroDoIntervalo(somarDias("2000-01-01", -1))).toBe(false);
     expect(dentroDoIntervalo(somarDias("2100-12-31", 1))).toBe(false);
+  });
+});
+
+describe("formatarDataHora", () => {
+  it("formata dd/mm/aaaa hh:mm no horário local, com zeros à esquerda", () => {
+    expect(formatarDataHora(new Date(2026, 2, 5, 7, 4).toISOString())).toBe("05/03/2026 07:04");
+    expect(formatarDataHora(new Date(2026, 10, 10, 23, 59).toISOString())).toBe("10/11/2026 23:59");
+  });
+
+  it("meia-noite aparece como 00:00 (e não 24:00)", () => {
+    expect(formatarDataHora(new Date(2026, 0, 1, 0, 0).toISOString())).toBe("01/01/2026 00:00");
+  });
+
+  it("texto que não é data devolve vazio, sem lançar exceção", () => {
+    expect(formatarDataHora("")).toBe("");
+    expect(formatarDataHora("ontem")).toBe("");
   });
 });
