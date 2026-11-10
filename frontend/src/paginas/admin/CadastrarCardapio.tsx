@@ -27,6 +27,11 @@ const hoje = () => {
   return `${dois(d.getDate())}/${dois(d.getMonth() + 1)}/${d.getFullYear()}`;
 };
 
+const hojeIso = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${dois(d.getMonth() + 1)}-${dois(d.getDate())}`;
+};
+
 /** Converte "dd/mm/aaaa" em "aaaa-mm-dd"; devolve null se incompleta ou inexistente (ex.: 31/02). */
 function paraIso(texto: string): string | null {
   const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(texto);
@@ -56,6 +61,8 @@ export default function CadastrarCardapio() {
   const [sucesso, setSucesso] = useState(false);
 
   const dataIso = paraIso(dataTexto);
+  // Não há correção retroativa: datas passadas só podem ser consultadas.
+  const passada = dataIso !== null && dataIso < hojeIso();
   const dataIncompleta = dataTexto.length === 10 && !dataIso;
 
   // Ao trocar a data, carrega o cardápio existente (se houver) para edição.
@@ -146,10 +153,15 @@ export default function CadastrarCardapio() {
           </Box>
         )}
 
-        {dataIso && !carregando && !existe && !erroGeral && (
+        {passada && (
+          <Alert severity="warning">
+            Esta data já passou. Não é possível cadastrar nem editar o cardápio de dias anteriores a hoje.
+          </Alert>
+        )}
+        {dataIso && !passada && !carregando && !existe && !erroGeral && (
           <Alert severity="info">Ainda não há cardápio para esta data. Preencha os campos e salve.</Alert>
         )}
-        {dataIso && !carregando && existe && !sucesso && (
+        {dataIso && !passada && !carregando && existe && !sucesso && (
           <Alert severity="info">Já existe cardápio para esta data. Ao salvar, ele será substituído.</Alert>
         )}
 
@@ -159,7 +171,7 @@ export default function CadastrarCardapio() {
             label={rotulo}
             value={form[chave]}
             onChange={(e) => alterar(chave, e.target.value)}
-            disabled={carregando || salvando || !dataIso}
+            disabled={carregando || salvando || !dataIso || passada}
             required
             error={erroCampo?.campo === chave}
             helperText={erroCampo?.campo === chave ? erroCampo.mensagem : undefined}
@@ -169,7 +181,7 @@ export default function CadastrarCardapio() {
         {erroGeral && <Alert severity="error">{erroGeral}</Alert>}
         {sucesso && <Alert severity="success">Cardápio salvo! Os usuários já podem vê-lo.</Alert>}
 
-        <Button type="submit" variant="contained" size="large" disabled={carregando || salvando || !dataIso}>
+        <Button type="submit" variant="contained" size="large" disabled={carregando || salvando || !dataIso || passada}>
           {salvando ? "Salvando..." : "Salvar cardápio"}
         </Button>
       </Stack>

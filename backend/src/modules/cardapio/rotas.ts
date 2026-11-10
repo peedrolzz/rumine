@@ -13,7 +13,7 @@ function validar<T>(esquema: ZodType<T>, dado: unknown, reply: FastifyReply): T 
   return undefined;
 }
 
-export function rotasCardapio(servico: ServicoCardapio) {
+export function rotasCardapio(servico: ServicoCardapio, hoje: () => string) {
   return async (app: FastifyInstance) => {
     // Qualquer usuário logado consulta o cardápio de uma data (HU-12).
     app.get(
@@ -34,6 +34,13 @@ export function rotasCardapio(servico: ServicoCardapio) {
     app.put("/cardapios/:data", { preHandler: exigirPerfil("ADMIN") }, async (request, reply) => {
       const params = validar(paramsData, request.params, reply);
       if (!params) return;
+      // Não há correção retroativa: só datas de hoje em diante podem ser cadastradas ou editadas.
+      if (params.data < hoje()) {
+        return reply.code(400).send({
+          campo: "data",
+          mensagem: "Não é possível cadastrar ou editar o cardápio de uma data que já passou.",
+        });
+      }
       const corpo = validar(corpoCardapio, request.body ?? {}, reply);
       if (!corpo) return;
       return servico.salvar(params.data, request.usuario!.id, corpo);

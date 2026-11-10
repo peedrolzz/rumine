@@ -40,7 +40,7 @@ const cardapio = {
   suco: "Laranja",
 };
 const CHAVES = Object.keys(cardapio);
-const DATA = "2026-11-10";
+const DATA = "2026-11-10"; // "hoje" fixo nos testes
 
 describe("cardápio", () => {
   let repo: ReturnType<typeof repoFalso>;
@@ -48,7 +48,7 @@ describe("cardápio", () => {
 
   beforeEach(async () => {
     repo = repoFalso();
-    app = await buildApp({ cardapioRepo: repo, identificar });
+    app = await buildApp({ cardapioRepo: repo, identificar, hoje: () => DATA });
   });
 
   const salvar = (perfil: string | undefined, corpo: unknown, data = DATA) =>
@@ -114,5 +114,33 @@ describe("cardápio", () => {
     const resposta = await consultar("USUARIO");
     expect(resposta.statusCode).toBe(404);
     expect(resposta.json().mensagem).toBe("O cardápio desta data ainda não foi publicado.");
+  });
+
+  it("não permite cadastrar nem editar datas anteriores a hoje", async () => {
+    const cadastro = await salvar("ADMIN", cardapio, "2026-11-09");
+    expect(cadastro.statusCode).toBe(400);
+    expect(cadastro.json().campo).toBe("data");
+    expect(cadastro.json().mensagem).toMatch(/já passou/);
+    expect((await consultar("ADMIN", "2026-11-09")).statusCode).toBe(404);
+  });
+
+  it("não permite editar um cardápio que ficou no passado", async () => {
+    await salvar("ADMIN", cardapio);
+    const futuro = await buildApp({ cardapioRepo: repo, identificar, hoje: () => "2026-11-11" });
+    const edicao = await futuro.inject({
+      method: "PUT",
+      url: `/cardapios/${DATA}`,
+      payload: { ...cardapio, sobremesa: "Gelatina" },
+      headers: { "x-perfil": "ADMIN" },
+    });
+    expect(edicao.statusCode).toBe(400);
+    const consulta = await futuro.inject({ method: "GET", url: `/cardapios/${DATA}`, headers: { "x-perfil": "USUARIO" } });
+    expect(consulta.statusCode).toBe(200);
+    expect(consulta.json().sobremesa).toBe("Banana");
+  });
+
+  it("permite cadastrar para hoje e para datas futuras", async () => {
+    expect((await salvar("ADMIN", cardapio, "2026-11-10")).statusCode).toBe(200);
+    expect((await salvar("ADMIN", cardapio, "2026-12-01")).statusCode).toBe(200);
   });
 });
