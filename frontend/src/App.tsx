@@ -5,6 +5,7 @@ import CreditCardIcon from "@mui/icons-material/CreditCard";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
 import { Link, Route, Routes, useLocation } from "react-router-dom";
+import CadastrarCardapio from "./paginas/admin/CadastrarCardapio";
 
 const Pagina = ({ titulo }: { titulo: string }) => (
   <Box sx={{ p: 2 }}><Typography variant="h5">{titulo}</Typography></Box>
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/recarga" element={<Pagina titulo="Recarregar" />} />
         <Route path="/historico" element={<Pagina titulo="Histórico" />} />
         <Route path="/cardapio" element={<Pagina titulo="Cardápio" />} />
+        <Route path="/admin/cardapio" element={<CadastrarCardapio />} />
       </Routes>
       <Paper sx={{ position: "fixed", bottom: 0, left: 0, right: 0 }} elevation={3}>
         <BottomNavigation value={pathname} sx={{ maxWidth: 480, mx: "auto" }}>
