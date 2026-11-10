@@ -57,3 +57,10 @@ export const dentroDoIntervalo = (iso: string) => {
   const ano = Number(iso.slice(0, 4));
   return ano >= ANO_MIN && ano <= ANO_MAX;
 };
+
+/** Instante ISO (ex.: "2026-11-10T15:00:00.000Z") como "dd/mm/aaaa hh:mm" no horário do aparelho. */
+export function formatarDataHora(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${dois(d.getDate())}/${dois(d.getMonth() + 1)}/${d.getFullYear()} ${dois(d.getHours())}:${dois(d.getMinutes())}`;
+}
