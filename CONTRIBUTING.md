@@ -155,7 +155,55 @@ git push
 
 Em caso de conflito, resolva nos arquivos marcados, rode a aplicação e os testes e só então finalize o merge. Na dúvida, peça ajuda antes de forçar qualquer coisa. **Não use `git push --force` em branches compartilhadas.**
 
-## 9. Dúvidas comuns
+## 9. Tags de versão e de épico
+
+As tags marcam pontos salvos da `main`, para comparar ou voltar a um estado conhecido. Há dois tipos:
+
+| Tag | Quando | Exemplo |
+|---|---|---|
+| Projeto base | Estado inicial, antes da primeira história | `v0.1.0` |
+| Épico concluído | Quando o épico fecha | `epico-e5-cardapio` |
+| MVP | Quando os épicos Must (E1 a E5) estiverem prontos | `v1.0.0` |
+
+### Nome da tag de épico
+
+`epico-eN-nome`, em minúsculas, sem acento, com hífen. O número é o do épico no documento de requisitos.
+
+- `epico-e1-autenticacao`
+- `epico-e2-carteira`
+- `epico-e3-acesso`
+- `epico-e4-historico`
+- `epico-e5-cardapio`
+
+Os épicos não terminam em ordem, e por isso a tag usa o nome do épico, e não um número de versão.
+
+### Quando criar
+
+Um épico está concluído quando as histórias **Must** dele estão mergeadas na `main`. Histórias Should e Could não seguram a tag.
+
+### Como criar
+
+Só uma pessoa cria a tag (o P.O.), sempre na `main` atualizada, depois do merge da última história Must do épico:
+
+```bash
+git checkout main && git pull origin main
+git tag -a epico-e5-cardapio -m "Épico E5 Cardápio: HU-11 e HU-12"
+git push origin epico-e5-cardapio
+```
+
+A mensagem lista o épico e as histórias incluídas. Nunca mova nem apague uma tag que já foi enviada.
+
+### Como usar
+
+```bash
+git tag -l                                      # lista as tags
+git diff v0.1.0..epico-e5-cardapio              # o que o épico trouxe
+git checkout epico-e5-cardapio                  # só para olhar (detached HEAD)
+git checkout -b fix/algo epico-e5-cardapio      # para trabalhar a partir dela
+```
+
+
+## 10. Dúvidas comuns
 
 | Situação | O que fazer |
 |---|---|
