@@ -26,3 +26,34 @@ export function aplicarMascara(texto: string): string {
   if (n.length <= 4) return `${n.slice(0, 2)}/${n.slice(2)}`;
   return `${n.slice(0, 2)}/${n.slice(2, 4)}/${n.slice(4)}`;
 }
+
+// Intervalo aceito pela API (o backend recusa datas fora dele).
+export const ANO_MIN = 2000;
+export const ANO_MAX = 2100;
+
+const DIAS_SEMANA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"] as const;
+
+/** "aaaa-mm-dd" -> "dd/mm/aaaa". */
+export const paraBr = (iso: string) => {
+  const [ano, mes, dia] = iso.split("-");
+  return `${dia}/${mes}/${ano}`;
+};
+
+/** Soma (ou subtrai) dias de uma data "aaaa-mm-dd", sem depender de fuso nem de horário de verão. */
+export function somarDias(iso: string, dias: number): string {
+  const [ano, mes, dia] = iso.split("-").map(Number) as [number, number, number];
+  const d = new Date(Date.UTC(ano, mes - 1, dia + dias));
+  return `${d.getUTCFullYear()}-${dois(d.getUTCMonth() + 1)}-${dois(d.getUTCDate())}`;
+}
+
+/** Abreviação do dia da semana ("seg", "ter"...) de uma data "aaaa-mm-dd". */
+export function diaDaSemana(iso: string): string {
+  const [ano, mes, dia] = iso.split("-").map(Number) as [number, number, number];
+  return DIAS_SEMANA[new Date(Date.UTC(ano, mes - 1, dia)).getUTCDay()]!;
+}
+
+/** Confere se a data "aaaa-mm-dd" está no intervalo que a API aceita. */
+export const dentroDoIntervalo = (iso: string) => {
+  const ano = Number(iso.slice(0, 4));
+  return ano >= ANO_MIN && ano <= ANO_MAX;
+};

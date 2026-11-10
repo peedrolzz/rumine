@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aplicarMascara, hoje, hojeIso, paraIso } from "./data";
+import { aplicarMascara, dentroDoIntervalo, diaDaSemana, hoje, hojeIso, paraBr, paraIso, somarDias } from "./data";
 
 describe("aplicarMascara", () => {
   it.each([
@@ -87,5 +87,74 @@ describe("hoje e hojeIso", () => {
     // virada de mês e de ano
     expect(paraIso("31/12/2026")! < paraIso("01/01/2027")!).toBe(true);
     expect(paraIso("30/11/2026")! < paraIso("01/12/2026")!).toBe(true);
+  });
+});
+
+describe("somarDias", () => {
+  it("avança e volta um dia", () => {
+    expect(somarDias("2026-11-10", 1)).toBe("2026-11-11");
+    expect(somarDias("2026-11-10", -1)).toBe("2026-11-09");
+  });
+
+  it("atravessa virada de mês e de ano", () => {
+    expect(somarDias("2026-11-30", 1)).toBe("2026-12-01");
+    expect(somarDias("2026-12-31", 1)).toBe("2027-01-01");
+    expect(somarDias("2027-01-01", -1)).toBe("2026-12-31");
+    expect(somarDias("2026-03-01", -1)).toBe("2026-02-28");
+  });
+
+  it("respeita ano bissexto", () => {
+    expect(somarDias("2028-02-28", 1)).toBe("2028-02-29");
+    expect(somarDias("2028-02-29", 1)).toBe("2028-03-01");
+    expect(somarDias("2027-02-28", 1)).toBe("2027-03-01");
+  });
+
+  it("não sofre com mudança de horário de verão", () => {
+    // Datas em que o Brasil já teve horário de verão e o EUA/Europa ainda têm.
+    expect(somarDias("2026-03-29", 1)).toBe("2026-03-30");
+    expect(somarDias("2026-10-25", 1)).toBe("2026-10-26");
+    expect(somarDias("2026-11-01", -1)).toBe("2026-10-31");
+  });
+
+  it("soma vários dias e zero", () => {
+    expect(somarDias("2026-11-10", 0)).toBe("2026-11-10");
+    expect(somarDias("2026-11-10", 30)).toBe("2026-12-10");
+    expect(somarDias("2026-11-10", -365)).toBe("2025-11-10");
+  });
+});
+
+describe("paraBr", () => {
+  it("inverte para dd/mm/aaaa e é o oposto de paraIso", () => {
+    expect(paraBr("2026-11-10")).toBe("10/11/2026");
+    expect(paraBr("2026-03-05")).toBe("05/03/2026");
+    expect(paraIso(paraBr("2028-02-29"))).toBe("2028-02-29");
+  });
+});
+
+describe("diaDaSemana", () => {
+  it.each([
+    ["2026-11-08", "dom"],
+    ["2026-11-09", "seg"],
+    ["2026-11-10", "ter"],
+    ["2026-11-11", "qua"],
+    ["2026-11-12", "qui"],
+    ["2026-11-13", "sex"],
+    ["2026-11-14", "sáb"],
+  ])("%s é %s", (iso, esperado) => {
+    expect(diaDaSemana(iso)).toBe(esperado);
+  });
+});
+
+describe("dentroDoIntervalo", () => {
+  it("aceita de 2000 a 2100 e recusa fora", () => {
+    expect(dentroDoIntervalo("2000-01-01")).toBe(true);
+    expect(dentroDoIntervalo("2100-12-31")).toBe(true);
+    expect(dentroDoIntervalo("1999-12-31")).toBe(false);
+    expect(dentroDoIntervalo("2101-01-01")).toBe(false);
+  });
+
+  it("os limites batem com as setas: um dia antes do mínimo e depois do máximo ficam fora", () => {
+    expect(dentroDoIntervalo(somarDias("2000-01-01", -1))).toBe(false);
+    expect(dentroDoIntervalo(somarDias("2100-12-31", 1))).toBe(false);
   });
 });
