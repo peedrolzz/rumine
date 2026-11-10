@@ -3,25 +3,50 @@ import { useEffect, useState } from "react";
 import { Alert, Box, Button, CircularProgress, Stack, TextField, Typography } from "@mui/material";
 import { ErroApi, requisitar } from "../../api/cliente";
 
-type Campo = "pratoPrincipal" | "acompanhamentos" | "sobremesa";
+const CAMPOS = [
+  { chave: "proteinaAnimal", rotulo: "Proteína animal" },
+  { chave: "proteinaVegetariana", rotulo: "Proteína vegetariana" },
+  { chave: "carboidrato1", rotulo: "Carboidrato 1" },
+  { chave: "carboidrato2", rotulo: "Carboidrato 2" },
+  { chave: "carboidrato3", rotulo: "Carboidrato 3" },
+  { chave: "salada1", rotulo: "Salada 1" },
+  { chave: "salada2", rotulo: "Salada 2" },
+  { chave: "sobremesa", rotulo: "Sobremesa" },
+  { chave: "suco", rotulo: "Suco" },
+] as const;
+
+type Campo = (typeof CAMPOS)[number]["chave"];
 type Formulario = Record<Campo, string>;
 
-const VAZIO: Formulario = { pratoPrincipal: "", acompanhamentos: "", sobremesa: "" };
-const ROTULOS: Record<Campo, string> = {
-  pratoPrincipal: "Prato principal",
-  acompanhamentos: "Acompanhamentos",
-  sobremesa: "Sobremesa",
-};
+const VAZIO = Object.fromEntries(CAMPOS.map((c) => [c.chave, ""])) as Formulario;
 
-// Data de hoje no horário local, no formato aaaa-mm-dd.
+// Datas: a tela usa dd/mm/aaaa; a API usa aaaa-mm-dd.
+const dois = (n: number) => String(n).padStart(2, "0");
 const hoje = () => {
   const d = new Date();
-  const dois = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${dois(d.getMonth() + 1)}-${dois(d.getDate())}`;
+  return `${dois(d.getDate())}/${dois(d.getMonth() + 1)}/${d.getFullYear()}`;
 };
 
+/** Converte "dd/mm/aaaa" em "aaaa-mm-dd"; devolve null se incompleta ou inexistente (ex.: 31/02). */
+function paraIso(texto: string): string | null {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(texto);
+  if (!m) return null;
+  const [, dia, mes, ano] = m;
+  const d = new Date(Number(ano), Number(mes) - 1, Number(dia));
+  const valida = d.getFullYear() === Number(ano) && d.getMonth() === Number(mes) - 1 && d.getDate() === Number(dia);
+  return valida ? `${ano}-${mes}-${dia}` : null;
+}
+
+/** Máscara: aceita só números e insere as barras (dd/mm/aaaa). */
+function aplicarMascara(texto: string): string {
+  const n = texto.replace(/\D/g, "").slice(0, 8);
+  if (n.length <= 2) return n;
+  if (n.length <= 4) return `${n.slice(0, 2)}/${n.slice(2)}`;
+  return `${n.slice(0, 2)}/${n.slice(2, 4)}/${n.slice(4)}`;
+}
+
 export default function CadastrarCardapio() {
-  const [data, setData] = useState(hoje());
+  const [dataTexto, setDataTexto] = useState(hoje());
   const [form, setForm] = useState<Formulario>(VAZIO);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -30,14 +55,17 @@ export default function CadastrarCardapio() {
   const [erroCampo, setErroCampo] = useState<{ campo: string; mensagem: string } | null>(null);
   const [sucesso, setSucesso] = useState(false);
 
+  const dataIso = paraIso(dataTexto);
+  const dataIncompleta = dataTexto.length === 10 && !dataIso;
+
   // Ao trocar a data, carrega o cardápio existente (se houver) para edição.
   useEffect(() => {
-    if (!data) return;
+    if (!dataIso) return;
     let cancelado = false;
-    requisitar<Formulario>(`/cardapios/${data}`)
+    requisitar<Formulario>(`/cardapios/${dataIso}`)
       .then((c) => {
         if (cancelado) return;
-        setForm({ pratoPrincipal: c.pratoPrincipal, acompanhamentos: c.acompanhamentos, sobremesa: c.sobremesa });
+        setForm(Object.fromEntries(CAMPOS.map((f) => [f.chave, c[f.chave] ?? ""])) as Formulario);
         setExiste(true);
       })
       .catch((e: unknown) => {
@@ -53,11 +81,12 @@ export default function CadastrarCardapio() {
     return () => {
       cancelado = true;
     };
-  }, [data]);
+  }, [dataIso]);
 
-  const trocarData = (novaData: string) => {
-    setData(novaData);
-    setCarregando(Boolean(novaData));
+  const trocarData = (valor: string) => {
+    const texto = aplicarMascara(valor);
+    setDataTexto(texto);
+    setCarregando(Boolean(paraIso(texto)));
     setErroGeral(null);
     setErroCampo(null);
     setSucesso(false);
@@ -71,12 +100,13 @@ export default function CadastrarCardapio() {
 
   const salvar = async (evento: React.SyntheticEvent) => {
     evento.preventDefault();
+    if (!dataIso) return;
     setSalvando(true);
     setErroGeral(null);
     setErroCampo(null);
     setSucesso(false);
     try {
-      await requisitar(`/cardapios/${data}`, { metodo: "PUT", corpo: form });
+      await requisitar(`/cardapios/${dataIso}`, { metodo: "PUT", corpo: form });
       setExiste(true);
       setSucesso(true);
     } catch (e) {
@@ -87,6 +117,12 @@ export default function CadastrarCardapio() {
     }
   };
 
+  const erroData = dataIncompleta
+    ? "Informe uma data válida, no formato dd/mm/aaaa."
+    : erroCampo?.campo === "data"
+      ? erroCampo.mensagem
+      : undefined;
+
   return (
     <Box component="form" onSubmit={salvar} noValidate sx={{ p: 2 }}>
       <Typography variant="h5" component="h1" sx={{ mb: 2 }}>
@@ -96,12 +132,12 @@ export default function CadastrarCardapio() {
       <Stack spacing={2}>
         <TextField
           label="Data"
-          type="date"
-          value={data}
+          placeholder="dd/mm/aaaa"
+          value={dataTexto}
           onChange={(e) => trocarData(e.target.value)}
-          slotProps={{ inputLabel: { shrink: true } }}
-          error={erroCampo?.campo === "data"}
-          helperText={erroCampo?.campo === "data" ? erroCampo.mensagem : undefined}
+          slotProps={{ htmlInput: { inputMode: "numeric", maxLength: 10 } }}
+          error={Boolean(erroData)}
+          helperText={erroData ?? "Dia, mês e ano. Exemplo: 10/11/2026"}
         />
 
         {carregando && (
@@ -110,32 +146,30 @@ export default function CadastrarCardapio() {
           </Box>
         )}
 
-        {!carregando && !existe && !erroGeral && (
+        {dataIso && !carregando && !existe && !erroGeral && (
           <Alert severity="info">Ainda não há cardápio para esta data. Preencha os campos e salve.</Alert>
         )}
-        {!carregando && existe && !sucesso && (
+        {dataIso && !carregando && existe && !sucesso && (
           <Alert severity="info">Já existe cardápio para esta data. Ao salvar, ele será substituído.</Alert>
         )}
 
-        {(Object.keys(ROTULOS) as Campo[]).map((campo) => (
+        {CAMPOS.map(({ chave, rotulo }) => (
           <TextField
-            key={campo}
-            label={ROTULOS[campo]}
-            value={form[campo]}
-            onChange={(e) => alterar(campo, e.target.value)}
-            disabled={carregando || salvando}
-            multiline
-            minRows={2}
+            key={chave}
+            label={rotulo}
+            value={form[chave]}
+            onChange={(e) => alterar(chave, e.target.value)}
+            disabled={carregando || salvando || !dataIso}
             required
-            error={erroCampo?.campo === campo}
-            helperText={erroCampo?.campo === campo ? erroCampo.mensagem : undefined}
+            error={erroCampo?.campo === chave}
+            helperText={erroCampo?.campo === chave ? erroCampo.mensagem : undefined}
           />
         ))}
 
         {erroGeral && <Alert severity="error">{erroGeral}</Alert>}
         {sucesso && <Alert severity="success">Cardápio salvo! Os usuários já podem vê-lo.</Alert>}
 
-        <Button type="submit" variant="contained" size="large" disabled={carregando || salvando || !data}>
+        <Button type="submit" variant="contained" size="large" disabled={carregando || salvando || !dataIso}>
           {salvando ? "Salvando..." : "Salvar cardápio"}
         </Button>
       </Stack>

@@ -29,10 +29,17 @@ const identificar: Identificador = (request) => {
 };
 
 const cardapio = {
-  pratoPrincipal: "Frango grelhado",
-  acompanhamentos: "Arroz, feijão e salada",
+  proteinaAnimal: "Frango grelhado",
+  proteinaVegetariana: "Omelete de legumes",
+  carboidrato1: "Arroz branco",
+  carboidrato2: "Feijão",
+  carboidrato3: "Batata cozida",
+  salada1: "Alface e tomate",
+  salada2: "Cenoura ralada",
   sobremesa: "Banana",
+  suco: "Laranja",
 };
+const CHAVES = Object.keys(cardapio);
 const DATA = "2026-11-10";
 
 describe("cardápio", () => {
@@ -70,22 +77,22 @@ describe("cardápio", () => {
     expect((await consultar("USUARIO")).json().sobremesa).toBe("Gelatina");
   });
 
-  it.each(["pratoPrincipal", "acompanhamentos", "sobremesa"])(
+  it.each(CHAVES)(
     "recusa e indica o campo quando %s está vazio",
     async (campo) => {
       const resposta = await salvar("ADMIN", { ...cardapio, [campo]: "   " });
       expect(resposta.statusCode).toBe(400);
       expect(resposta.json().campo).toBe(campo);
-      expect(resposta.json().mensagem).toMatch(/Informe/);
+      expect(resposta.json().mensagem).toMatch(/^Preencha o campo/);
       expect((await consultar("USUARIO")).statusCode).toBe(404);
     },
   );
 
   it("recusa campo ausente e data inválida", async () => {
-    const { sobremesa: _, ...semSobremesa } = cardapio;
-    const ausente = await salvar("ADMIN", semSobremesa);
+    const { suco: _, ...semSuco } = cardapio;
+    const ausente = await salvar("ADMIN", semSuco);
     expect(ausente.statusCode).toBe(400);
-    expect(ausente.json().campo).toBe("sobremesa");
+    expect(ausente.json().campo).toBe("suco");
 
     const dataInvalida = await salvar("ADMIN", cardapio, "2026-02-31");
     expect(dataInvalida.statusCode).toBe(400);
