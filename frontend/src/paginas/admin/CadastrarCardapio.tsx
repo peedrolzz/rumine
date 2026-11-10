@@ -2,22 +2,10 @@
 import { useEffect, useState } from "react";
 import { Alert, Box, Button, CircularProgress, Stack, TextField, Typography } from "@mui/material";
 import { ErroApi, requisitar } from "../../api/cliente";
+import { CAMPOS, type Campo, type Cardapio } from "../../cardapio/campos";
 import { aplicarMascara, hoje, hojeIso, paraIso } from "../../utils/data";
 
-const CAMPOS = [
-  { chave: "proteinaAnimal", rotulo: "Proteína animal" },
-  { chave: "proteinaVegetariana", rotulo: "Proteína vegetariana" },
-  { chave: "carboidrato1", rotulo: "Carboidrato 1" },
-  { chave: "carboidrato2", rotulo: "Carboidrato 2" },
-  { chave: "carboidrato3", rotulo: "Carboidrato 3" },
-  { chave: "salada1", rotulo: "Salada 1" },
-  { chave: "salada2", rotulo: "Salada 2" },
-  { chave: "sobremesa", rotulo: "Sobremesa" },
-  { chave: "suco", rotulo: "Suco" },
-] as const;
-
-type Campo = (typeof CAMPOS)[number]["chave"];
-type Formulario = Record<Campo, string>;
+type Formulario = Cardapio;
 
 const VAZIO = Object.fromEntries(CAMPOS.map((c) => [c.chave, ""])) as Formulario;
 
