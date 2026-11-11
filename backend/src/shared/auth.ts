@@ -1,7 +1,7 @@
 // Contrato de autenticação/autorização usado pelos módulos.
-// Quem preenche `request.usuario` é o módulo de identidade (HU-01/HU-03).
-// Enquanto ele não existe, a aplicação usa um identificador de desenvolvimento
-// (ver usuariosDev.ts) ou, nos testes, um identificador falso.
+// Quem preenche `request.usuario` é o módulo de identidade, a partir do cookie de sessão
+// (HU-01). Em desenvolvimento, DEV_USUARIO (ver usuariosDev.ts) pode substituí-lo; nos
+// testes de outros módulos, um identificador falso.
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { PerfilUsuario } from "../../generated/prisma/enums.js";
 
@@ -10,6 +10,8 @@ export type UsuarioAutenticado = { id: string; perfil: PerfilUsuario };
 declare module "fastify" {
   interface FastifyRequest {
     usuario?: UsuarioAutenticado | undefined;
+    /** Havia cookie de sessão, mas a sessão expirou (passou o prazo de reautenticação). */
+    sessaoExpirada?: boolean | undefined;
   }
 }
 
@@ -20,6 +22,9 @@ export type Identificador = (request: FastifyRequest) => void | Promise<void>;
 export function exigirPerfil(...perfis: PerfilUsuario[]) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
     if (!request.usuario) {
+      if (request.sessaoExpirada) {
+        return reply.code(401).send({ codigo: "SESSAO_EXPIRADA", mensagem: "Sua sessão expirou. Entre novamente." });
+      }
       return reply.code(401).send({ mensagem: "Faça login para continuar." });
     }
     if (!perfis.includes(request.usuario.perfil)) {

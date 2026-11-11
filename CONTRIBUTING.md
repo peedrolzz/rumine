@@ -48,6 +48,7 @@ cd backend
 cp .env.example .env          # no Windows: copy .env.example .env
 npm install
 npx prisma migrate dev        # cria as tabelas
+npm run seed                  # dados de desenvolvimento: câmpus e usuários de exemplo
 npm run dev                   # http://localhost:3000/health
 
 # Terminal 2: frontend
@@ -56,9 +57,25 @@ npm install
 npm run dev                   # http://localhost:5173
 ```
 
-O arquivo `.env` do backend deve conter `DATABASE_URL="postgresql://rumine:rumine@localhost:5432/rumine"`. Nunca faça commit do `.env`.
+O arquivo `.env` do backend deve conter `DATABASE_URL="postgresql://rumine:rumine@localhost:5432/rumine"`. O `.env.example` traz as outras variáveis, comentadas e explicadas. Nunca faça commit do `.env`.
 
 Os avisos amarelos do npm sobre `install-scripts` e as vulnerabilidades "moderate" podem ser ignorados por enquanto. **Não rode `npm audit fix --force`.**
+
+### Cadastro e login em desenvolvimento
+
+O login é de verdade (HU-01): senha com **Argon2id** (`@node-rs/argon2`, que já vem com binários prontos: não precisa de compilador; se o `npm install` falhar nele, avise a equipe) e sessão em cookie `HttpOnly` de 45 dias. Duas formas de trabalhar:
+
+- **Sem login (mais rápido):** descomente `DEV_USUARIO=ADMIN` (ou `USUARIO`, `OPERADOR`, `MESTRE`) no `.env` do backend e reinicie. O app passa a agir como o usuário de exemplo do seed. **Enquanto estiver definido, o login real é ignorado.**
+- **Com login de verdade:** deixe o `DEV_USUARIO` comentado e teste o fluxo completo:
+  1. Cadastre-se na tela com um e-mail `@alunos.utfpr.edu.br` (por enquanto é o único domínio aceito; nenhum e-mail real é enviado).
+  2. O e-mail é simulado: procure no **terminal do backend** a linha `[E-MAIL SIMULADO]` e abra o link de confirmação que aparece nela.
+  3. Depois da confirmação a conta fica "pendente de aprovação". Enquanto a tela do Admin (HU-20) não existe, ative a conta direto no banco:
+
+     ```bash
+     docker exec rumine-db-1 psql -U rumine -d rumine -c "update usuario set status='ATIVO' where email='seu@alunos.utfpr.edu.br'"
+     ```
+
+Para quem desenvolve: proteja as rotas com `exigirPerfil(...)` (a sessão é lida do cookie `rumine_sessao`), e no front envie as requisições com `credentials: "include"` (o `api/cliente.ts` já faz isso). Toda requisição que altera dados precisa vir do endereço do front (`FRONTEND_ORIGIN`, por padrão `http://localhost:5173`): abrir o app por `127.0.0.1` em vez de `localhost` dá erro 403 "Origem não permitida".
 
 ## 5. Fluxo de trabalho por história
 
