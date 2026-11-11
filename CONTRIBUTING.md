@@ -5,7 +5,7 @@ Este guia explica como obter o código, trabalhar em uma história e enviar suas
 ## 1. Pré-requisitos
 
 - [Git](https://git-scm.com/downloads)
-- [Node.js](https://nodejs.org/) LTS (versão definida em `.nvmrc` quando o projeto for criado) e npm
+- [Node.js](https://nodejs.org/) 26 (a mesma versão da CI, definida em `NODE_VERSION` no `.github/workflows/ci.yml`) e npm
 - [Docker](https://www.docker.com/) e Docker Compose (para o PostgreSQL local)
 - Uma conta no GitHub com acesso ao repositório (peça ao P.O. para ser adicionado como colaborador)
 - Um editor com suporte a TypeScript (por exemplo, VS Code)
@@ -123,7 +123,7 @@ git push -u origin feat/hu-05-recarga-backend
    - `Closes #NN` (número do issue), para o issue fechar sozinho no merge. Se for só uma parte da história, use `Refs #NN`;
    - prints, quando houver tela.
 4. Peça revisão de quem está na coluna **Revisão** da tabela de distribuição (`semana4/RUMine_Distribuicao_Historias.md`).
-5. Aguarde o CI (testes e lint) passar. Se falhar, corrija antes de pedir revisão.
+5. Aguarde o CI passar (seção 10). Se falhar, corrija antes de pedir revisão.
 
 ### Checklist do autor (antes de pedir revisão)
 
@@ -202,8 +202,46 @@ git checkout epico-e5-cardapio                  # só para olhar (detached HEAD)
 git checkout -b fix/algo epico-e5-cardapio      # para trabalhar a partir dela
 ```
 
+## 10. Integração contínua (CI)
 
-## 10. Dúvidas comuns
+A CI é o GitHub Actions (`.github/workflows/ci.yml`). Ela roda em todo Pull Request para a `main` e em todo push na `main`, com dois jobs em paralelo:
+
+| Job | O que confere |
+|---|---|
+| **Backend (tipos e testes)** | gera o client do Prisma, checa os tipos (`typecheck`) e roda os testes |
+| **Frontend (lint, testes e build)** | roda o lint, os testes e o build |
+
+A CI não acessa banco de dados: os testes usam repositórios em memória. Se uma história precisar de teste com banco, combine antes com o time, porque o workflow terá de subir um PostgreSQL.
+
+### Como ver o resultado
+
+Na página do PR, a seção **Checks** mostra cada job: ✓ verde (passou) ou ✗ vermelho (falhou). Clique em **Details** para ler o log e achar o passo que quebrou. Cada commit novo no PR cancela a execução anterior e começa outra (leva cerca de 1 minuto).
+
+### Rode o mesmo antes de enviar
+
+Os mesmos comandos da CI, na sua máquina:
+
+```bash
+# backend (na pasta backend/)
+npx prisma generate
+npm run typecheck
+npm test
+
+# frontend (na pasta frontend/)
+npm run lint
+npm test
+npm run build
+```
+
+### Se a CI falhar
+
+Corrija na mesma branch e faça um novo commit: a CI roda de novo sozinha. Não peça revisão com a CI vermelha e não apague nem desligue testes só para passar.
+
+### Bloquear o merge quando a CI falha
+
+Isso exige ligar a regra **Require status checks to pass** na proteção da branch `main` (Settings → Branches), marcando os jobs "Backend (tipos e testes)" e "Frontend (lint, testes e build)". Só quem administra o repositório consegue configurar. **Enquanto a regra não estiver ligada, vale o combinado: só faça o merge com os dois checks verdes.**
+
+## 11. Dúvidas comuns
 
 | Situação | O que fazer |
 |---|---|
