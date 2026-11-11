@@ -1,0 +1,59 @@
+name: CI
+
+# Roda a cada Pull Request para a main e a cada push na main (RNF-08).
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Commit novo no mesmo PR cancela a execução anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 26
+
+jobs:
+  backend:
+    name: Backend (tipos e testes)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      # O client do Prisma não vai para o Git; é gerado aqui. O banco não é acessado.
+      - run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://rumine:rumine@localhost:5432/rumine
+      - run: npm run typecheck
+      - run: npm test
+
+  frontend:
+    name: Frontend (lint, testes e build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
