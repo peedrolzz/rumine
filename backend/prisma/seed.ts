@@ -9,18 +9,26 @@ await prisma.campus.upsert({
   update: {},
 });
 
+const NOMES_DEV: Record<PerfilUsuario, string> = {
+  ADMIN: "Admin Dev",
+  OPERADOR: "Operador Dev",
+  USUARIO: "Usuário Dev",
+  MESTRE: "Mestre Dev",
+};
+
 for (const [perfil, id] of Object.entries(USUARIOS_DEV) as [PerfilUsuario, string][]) {
   await prisma.usuario.upsert({
     where: { id },
     create: {
       id,
+      nome: NOMES_DEV[perfil],
       email: `${perfil.toLowerCase()}@dev.local`,
       senhaHash: "sem-login-dev", // não é um hash válido: ninguém consegue logar com ele
       perfil,
       categoria: "DISCENTE",
       status: "ATIVO",
     },
-    update: {},
+    update: { nome: NOMES_DEV[perfil] }, // preenche o nome de usuários criados antes da coluna existir
   });
 }
 // Movimentos de exemplo para o usuário de desenvolvimento (testar o histórico, HU-09, sem as HUs de

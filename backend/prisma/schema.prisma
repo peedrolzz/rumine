@@ -95,6 +95,7 @@ enum EnvioUtfpr {
 
 model Usuario {
   id                 String           @id @default(uuid()) @db.Uuid
+  nome               String
   email              String           @unique
   senhaHash          String           @map("senha_hash")
   perfil             PerfilUsuario
@@ -115,8 +116,41 @@ model Usuario {
   leiturasOperadas  LeituraAcesso[]   @relation("LeituraOperador")
   consumos          Consumo[]
   logs              LogAuditoria[]
+  sessoes           Sessao[]
+  tokensEmail       TokenEmail[]
 
   @@map("usuario")
+}
+
+// Sessão de login (HU-01). O cookie leva um token aleatório; só o hash dele fica aqui.
+// Validade absoluta de 45 dias (reautenticação), sem renovação automática.
+model Sessao {
+  id         String    @id @default(uuid()) @db.Uuid
+  usuarioId  String    @map("usuario_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash") // SHA-256 (hex) do token do cookie
+  criadaEm   DateTime  @default(now()) @map("criada_em")
+  expiraEm   DateTime  @map("expira_em")
+  revogadaEm DateTime? @map("revogada_em")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId])
+  @@map("sessao")
+}
+
+// Token de confirmação de e-mail (HU-01): uso único, com validade. Só o hash fica no banco.
+model TokenEmail {
+  id        String    @id @default(uuid()) @db.Uuid
+  usuarioId String    @map("usuario_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  criadoEm  DateTime  @default(now()) @map("criado_em")
+  expiraEm  DateTime  @map("expira_em")
+  usadoEm   DateTime? @map("usado_em")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId])
+  @@map("token_email")
 }
 
 model Carteira {
