@@ -10,7 +10,7 @@ Nos RUs, a compra presencial de fichas, a conferência manual de pagamentos e a 
 
 ## Como funciona
 
-1. O usuário se cadastra com o e-mail institucional e senha própria e comprova o vínculo com a UTFPR uma única vez (RA ou SIAPE e declaração de matrícula), com aprovação do Admin.
+1. O usuário se cadastra com o e-mail institucional e senha própria e comprova o vínculo com a UTFPR uma única vez (RA ou SIAPE e declaração de matrícula), com aprovação do Admin. No MVP, o cadastro aceita só o e-mail de discentes (`@alunos.utfpr.edu.br`); docentes, servidores e externos ficam para depois.
 2. Recarrega a carteira por Pix e acompanha o saldo e o histórico.
 3. Na entrada, apresenta um QR Code de 30 segundos; o operador o lê com a câmera e o sistema libera o acesso, debita a refeição e registra o consumo.
 4. O Admin publica o cardápio e acompanha o histórico geral.
@@ -42,7 +42,7 @@ Detalhes: Mais informações em [`documentos/`](documentos/).
 | Backend | Fastify, com módulos manuais |
 | Frontend | React + Vite, PWA |
 | Banco | PostgreSQL (Fly Postgres, região GRU) com Prisma |
-| Autenticação | Senha com Argon2; sessão em cookie `HttpOnly`; QR Code com JWT de 30 s |
+| Autenticação | Senha com Argon2id (`@node-rs/argon2`); sessão em tabela, com cookie `HttpOnly` e validade de 45 dias; QR Code com JWT de 30 s |
 | Arquivos | Supabase Storage (bucket privado) |
 | E-mail | Resend |
 | Pagamento | Mercado Pago (sandbox), via webhook |
@@ -77,7 +77,7 @@ Como o trabalho está organizado:
 
 ## Como executar
 
-Pré-requisitos: Node.js LTS, Docker Desktop (aberto) e Git. O passo a passo completo está no [CONTRIBUTING.md](CONTRIBUTING.md).
+Pré-requisitos: Node.js 26, Docker Desktop (aberto) e Git. O passo a passo completo, inclusive como testar cadastro e login, está no [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```bash
 # 1. Banco de dados (na raiz do projeto)
@@ -88,6 +88,7 @@ cd backend
 copy .env.example .env      # Mac/Linux: cp .env.example .env
 npm install
 npx prisma migrate dev
+npm run seed                # câmpus e usuários de exemplo
 npm run dev                 # http://localhost:3000/health
 
 # 3. Frontend (terminal 2)
