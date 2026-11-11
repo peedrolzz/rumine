@@ -67,15 +67,15 @@ O login é de verdade (HU-01): senha com **Argon2id** (`@node-rs/argon2`, que j�
 
 - **Sem login (mais rápido):** descomente `DEV_USUARIO=ADMIN` (ou `USUARIO`, `OPERADOR`, `MESTRE`) no `.env` do backend e reinicie. O app passa a agir como o usuário de exemplo do seed. **Enquanto estiver definido, o login real é ignorado.**
 - **Com login de verdade:** deixe o `DEV_USUARIO` comentado e teste o fluxo completo:
-  1. Cadastre-se na tela com um e-mail `@alunos.utfpr.edu.br` (por enquanto é o único domínio aceito; nenhum e-mail real é enviado).
-  2. O e-mail é simulado: procure no **terminal do backend** a linha `[E-MAIL SIMULADO]` e abra o link de confirmação que aparece nela.
-  3. Depois da confirmação a conta fica "pendente de aprovação". Enquanto a tela do Admin (HU-20) não existe, ative a conta direto no banco:
+  1. Abra http://localhost:5173/cadastro e cadastre-se com um e-mail `@alunos.utfpr.edu.br` (por enquanto é o único domínio aceito; nenhum e-mail real é enviado). A senha precisa de 8 caracteres, um número e um caractere especial.
+  2. O e-mail é simulado: procure no **terminal do backend** a linha `[E-MAIL SIMULADO]`, abra o link de confirmação que aparece nela e toque em **Confirmar e-mail** (a confirmação só acontece no toque do botão).
+  3. Depois da confirmação, entre pela tela de login. A conta fica "pendente de aprovação" e o app mostra a tela "Cadastro em análise". Enquanto a tela do Admin (HU-20) não existe, ative a conta direto no banco e toque em **Atualizar**:
 
      ```bash
      docker exec rumine-db-1 psql -U rumine -d rumine -c "update usuario set status='ATIVO' where email='seu@alunos.utfpr.edu.br'"
      ```
 
-Para quem desenvolve: proteja as rotas com `exigirPerfil(...)` (a sessão é lida do cookie `rumine_sessao`), e no front envie as requisições com `credentials: "include"` (o `api/cliente.ts` já faz isso). Toda requisição que altera dados precisa vir do endereço do front (`FRONTEND_ORIGIN`, por padrão `http://localhost:5173`): abrir o app por `127.0.0.1` em vez de `localhost` dá erro 403 "Origem não permitida".
+Para quem desenvolve: proteja as rotas com `exigirPerfil(...)` (a sessão é lida do cookie `rumine_sessao`), e no front envie as requisições com `credentials: "include"` (o `api/cliente.ts` já faz isso). Toda requisição que altera dados precisa vir do endereço do front (`FRONTEND_ORIGIN`, por padrão `http://localhost:5173`): abrir o app por `127.0.0.1` em vez de `localhost` dá erro 403 "Origem não permitida". No front, telas que exigem login entram dentro do `<RotaProtegida>` em `App.tsx` (as que exigem cadastro ativo, dentro do `<LayoutApp>`), e `useAuth()` entrega o usuário logado. Uma chamada que volta 401 já leva ao login sozinha, com o aviso de sessão expirada.
 
 ## 5. Fluxo de trabalho por história
 
