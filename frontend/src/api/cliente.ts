@@ -27,7 +27,8 @@ export function aoNaoAutenticado(tratador: TratadorNaoAutenticado): () => void {
   };
 }
 
-export async function requisitar<T>(caminho: string, opcoes: { metodo?: string; corpo?: unknown } = {}): Promise<T> {
+/** Faz a chamada e devolve a resposta de sucesso; qualquer falha vira ErroApi em português. */
+async function executar(caminho: string, opcoes: { metodo?: string; corpo?: unknown }): Promise<Response> {
   let resposta: Response;
   try {
     // FormData (envio de arquivo) segue como está: o navegador define o Content-Type com o separador.
@@ -42,11 +43,7 @@ export async function requisitar<T>(caminho: string, opcoes: { metodo?: string; 
     throw new ErroApi("Não foi possível conectar ao servidor. Verifique sua internet e tente de novo.", 0);
   }
 
-  if (resposta.ok) {
-    // 204 (ex.: logout) não tem corpo: não há o que ler.
-    if (resposta.status === 204) return undefined as T;
-    return (await resposta.json()) as T;
-  }
+  if (resposta.ok) return resposta;
 
   const dados = (await resposta.json().catch(() => ({}))) as { mensagem?: string; campo?: string; codigo?: string };
   const erro = new ErroApi(dados.mensagem ?? "Algo deu errado. Tente novamente.", resposta.status, dados.campo, dados.codigo);
@@ -54,4 +51,16 @@ export async function requisitar<T>(caminho: string, opcoes: { metodo?: string; 
   // 401 fora do login = não há sessão válida. No próprio login, 401 só significa senha errada.
   if (resposta.status === 401 && !caminho.startsWith("/auth/login")) tratadorNaoAutenticado?.(erro);
   throw erro;
+}
+
+export async function requisitar<T>(caminho: string, opcoes: { metodo?: string; corpo?: unknown } = {}): Promise<T> {
+  const resposta = await executar(caminho, opcoes);
+  // 204 (ex.: logout) não tem corpo: não há o que ler.
+  if (resposta.status === 204) return undefined as T;
+  return (await resposta.json()) as T;
+}
+
+/** Busca um arquivo (ex.: a declaração de vínculo) com a sessão e devolve o conteúdo. */
+export async function requisitarArquivo(caminho: string): Promise<Blob> {
+  return (await executar(caminho, {})).blob();
 }

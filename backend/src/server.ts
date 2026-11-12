@@ -6,6 +6,7 @@ import { criarRepositorioLogsPrisma } from "./modules/auditoria/consulta.js";
 import { criarRepositorioContasPrisma } from "./modules/mestre/contas.js";
 import { criarArmazenamentoEmDisco } from "./shared/armazenamento.js";
 import { criarRepositorioVinculoPrisma } from "./modules/vinculo/repositorio.js";
+import { criarRepositorioCadastrosPrisma } from "./modules/cadastros/repositorio.js";
 import { criarRepositorioPrisma } from "./modules/cardapio/repositorio.js";
 import { criarRepositorioHistoricoPrisma } from "./modules/historico/repositorio.js";
 import { criarRepositorioIdentidadePrisma } from "./modules/identidade/repositorio.js";
@@ -20,6 +21,7 @@ const app = await buildApp({
     repo: criarRepositorioVinculoPrisma(prisma),
     armazenamento: criarArmazenamentoEmDisco(process.env.ARMAZENAMENTO_DIR ?? "armazenamento-privado"),
   },
+  cadastrosRepo: criarRepositorioCadastrosPrisma(prisma),
   identificar,
   logger: true,
 });
