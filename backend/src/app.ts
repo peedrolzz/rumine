@@ -7,6 +7,9 @@ import { hojeNoBrasil } from "./shared/data.js";
 import { rotasCardapio } from "./modules/cardapio/rotas.js";
 import { criarServicoCardapio } from "./modules/cardapio/servico.js";
 import type { CardapioRepositorio } from "./modules/cardapio/repositorio.js";
+import { criarServicoLogs, type LogsRepositorio } from "./modules/auditoria/consulta.js";
+import { criarServicoContas, type ContasRepositorio } from "./modules/mestre/contas.js";
+import { rotasMestre } from "./modules/mestre/rotas.js";
 import { rotasHistorico } from "./modules/historico/rotas.js";
 import { criarServicoHistorico } from "./modules/historico/servico.js";
 import type { HistoricoRepositorio } from "./modules/historico/repositorio.js";
@@ -30,10 +33,14 @@ export type ConfigIdentidade = {
   dominios?: string[];
 };
 
+/** Área do Mestre (HU-03): criar Admin e Operador e consultar os logs de auditoria. */
+export type ConfigMestre = { contasRepo: ContasRepositorio; logsRepo: LogsRepositorio; hasher?: Hasher };
+
 export type Dependencias = {
   cardapioRepo: CardapioRepositorio;
   historicoRepo?: HistoricoRepositorio | undefined;
   identidade?: ConfigIdentidade | undefined;
+  mestre?: ConfigMestre | undefined;
   /**
    * Identificador explícito (DEV_USUARIO ou os testes). Roda depois do cookie de sessão
    * e, se definir o usuário, tem precedência sobre ele.
@@ -51,6 +58,7 @@ export async function buildApp({
   cardapioRepo,
   historicoRepo,
   identidade,
+  mestre,
   identificar,
   origemFrontend = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173",
   hoje = hojeNoBrasil,
@@ -109,6 +117,10 @@ export async function buildApp({
   }
   await app.register(rotasCardapio(criarServicoCardapio(cardapioRepo), hoje));
   if (historicoRepo) await app.register(rotasHistorico(criarServicoHistorico(historicoRepo)));
+  if (mestre) {
+    const contas = criarServicoContas(mestre.contasRepo, mestre.hasher ?? hasherArgon2);
+    await app.register(rotasMestre(contas, criarServicoLogs(mestre.logsRepo)));
+  }
   return app;
 }
 

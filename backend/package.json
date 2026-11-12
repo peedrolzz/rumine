@@ -8,7 +8,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "postinstall": "prisma skills sync || exit 0",
-    "seed": "prisma db seed"
+    "seed": "prisma db seed",
+    "criar-mestre": "tsx scripts/criarMestre.ts"
   },
   "keywords": [],
   "author": "",

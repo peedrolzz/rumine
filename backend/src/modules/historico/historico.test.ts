@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../../app.js";
 import type { Identificador } from "../../shared/auth.js";
 import type { CardapioRepositorio } from "../cardapio/repositorio.js";
-import { codificarCursor, decodificarCursor } from "./cursor.js";
+import { codificarCursor, decodificarCursor } from "../../shared/cursor.js";
 import type { HistoricoRepositorio, Movimento } from "./repositorio.js";
 
 // ---------- apoio ----------

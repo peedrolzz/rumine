@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// Cursor de paginação = posição do último item entregue: (data, id).
+// Cursor de paginação (usado pelo histórico e pelos logs) = posição do último item entregue: (data, id).
 // Vai para o cliente como texto opaco (base64url de um JSON).
 export type Posicao = { data: Date; id: string };
 
