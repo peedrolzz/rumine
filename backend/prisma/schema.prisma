@@ -10,7 +10,7 @@ datasource db {
 // RU Mine - esquema do banco (gerado a partir de semana3/rumine.dbml)
 // Valores monetários em centavos inteiros.
 // Regras que o Prisma não expressa (criar na migração SQL, ver notas no fim):
-//   - CHECK (saldo_centavos >= 0) em carteira
+//   - CHECK (saldo_centavos >= 0) em carteira (já criado: migração carteira_saldo_nao_negativo)
 //   - débito atômico com SELECT ... FOR UPDATE via $queryRaw dentro de $transaction
 
 enum PerfilUsuario {
@@ -156,7 +156,7 @@ model TokenEmail {
 model Carteira {
   id            String   @id @default(uuid()) @db.Uuid
   usuarioId     String   @unique @map("usuario_id") @db.Uuid
-  saldoCentavos Int      @map("saldo_centavos") // CHECK (>= 0) na migração
+  saldoCentavos Int      @map("saldo_centavos") // CHECK (>= 0) criado na migração carteira_saldo_nao_negativo
   atualizadoEm  DateTime @default(now()) @updatedAt @map("atualizado_em")
 
   usuario    Usuario     @relation(fields: [usuarioId], references: [id])

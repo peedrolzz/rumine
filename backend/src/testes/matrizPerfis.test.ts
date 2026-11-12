@@ -44,6 +44,7 @@ const ROTAS: Rota[] = [
     permitidos: ["ADMIN"],
     corpo: {},
   },
+  { metodo: "GET", url: "/carteira", padrao: "/carteira", permitidos: ["USUARIO"] },
   { metodo: "GET", url: "/vinculo", padrao: "/vinculo", permitidos: ["USUARIO"] },
   { metodo: "POST", url: "/vinculo", padrao: "/vinculo", permitidos: ["USUARIO"] },
   {
@@ -106,6 +107,7 @@ async function montar() {
       logsRepo: { listar: async () => [] },
     },
     vinculo,
+    carteiraRepo: { buscarSaldo: async () => ({ saldoCentavos: 0, atualizadoEm: new Date() }) },
     cadastrosRepo: { listarPendentes: async () => [], decidir: async () => "NAO_ENCONTRADO" },
     identificar,
     hoje: () => "2026-11-10",

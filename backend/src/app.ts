@@ -17,6 +17,9 @@ import type { Armazenamento } from "./shared/armazenamento.js";
 import { criarServicoCadastros } from "./modules/cadastros/servico.js";
 import { rotasCadastros } from "./modules/cadastros/rotas.js";
 import type { CadastrosRepositorio } from "./modules/cadastros/repositorio.js";
+import { criarServicoCarteira } from "./modules/carteira/servico.js";
+import { rotasCarteira } from "./modules/carteira/rotas.js";
+import type { CarteiraRepositorio } from "./modules/carteira/repositorio.js";
 import { rotasHistorico } from "./modules/historico/rotas.js";
 import { criarServicoHistorico } from "./modules/historico/servico.js";
 import type { HistoricoRepositorio } from "./modules/historico/repositorio.js";
@@ -54,6 +57,8 @@ export type Dependencias = {
   vinculo?: ConfigVinculo | undefined;
   /** Aprovação e rejeição de cadastros pelo Admin (HU-20). */
   cadastrosRepo?: CadastrosRepositorio | undefined;
+  /** Saldo da carteira (HU-04). */
+  carteiraRepo?: CarteiraRepositorio | undefined;
   /**
    * Identificador explícito (DEV_USUARIO ou os testes). Roda depois do cookie de sessão
    * e, se definir o usuário, tem precedência sobre ele.
@@ -74,6 +79,7 @@ export async function buildApp({
   mestre,
   vinculo,
   cadastrosRepo,
+  carteiraRepo,
   identificar,
   origemFrontend = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173",
   hoje = hojeNoBrasil,
@@ -134,6 +140,7 @@ export async function buildApp({
   if (historicoRepo) await app.register(rotasHistorico(criarServicoHistorico(historicoRepo)));
   if (vinculo) await app.register(rotasVinculo(criarServicoVinculo(vinculo.repo, vinculo.armazenamento)));
   if (cadastrosRepo) await app.register(rotasCadastros(criarServicoCadastros(cadastrosRepo)));
+  if (carteiraRepo) await app.register(rotasCarteira(criarServicoCarteira(carteiraRepo)));
   if (mestre) {
     const contas = criarServicoContas(mestre.contasRepo, mestre.hasher ?? hasherArgon2);
     await app.register(rotasMestre(contas, criarServicoLogs(mestre.logsRepo)));
