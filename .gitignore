@@ -6,3 +6,5 @@ backend/generated/
 .claude/
 .cursor/
 .devin/
+# Arquivos enviados pelos usuários (declarações de vínculo): nunca vão para o Git
+backend/armazenamento-privado/

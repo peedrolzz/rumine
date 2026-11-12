@@ -10,6 +10,10 @@ import type { CardapioRepositorio } from "./modules/cardapio/repositorio.js";
 import { criarServicoLogs, type LogsRepositorio } from "./modules/auditoria/consulta.js";
 import { criarServicoContas, type ContasRepositorio } from "./modules/mestre/contas.js";
 import { rotasMestre } from "./modules/mestre/rotas.js";
+import { criarServicoVinculo } from "./modules/vinculo/servico.js";
+import { rotasVinculo } from "./modules/vinculo/rotas.js";
+import type { VinculoRepositorio } from "./modules/vinculo/repositorio.js";
+import type { Armazenamento } from "./shared/armazenamento.js";
 import { rotasHistorico } from "./modules/historico/rotas.js";
 import { criarServicoHistorico } from "./modules/historico/servico.js";
 import type { HistoricoRepositorio } from "./modules/historico/repositorio.js";
@@ -36,11 +40,15 @@ export type ConfigIdentidade = {
 /** Área do Mestre (HU-03): criar Admin e Operador e consultar os logs de auditoria. */
 export type ConfigMestre = { contasRepo: ContasRepositorio; logsRepo: LogsRepositorio; hasher?: Hasher };
 
+/** Comprovação de vínculo (HU-02): repositório e armazenamento privado dos arquivos. */
+export type ConfigVinculo = { repo: VinculoRepositorio; armazenamento: Armazenamento };
+
 export type Dependencias = {
   cardapioRepo: CardapioRepositorio;
   historicoRepo?: HistoricoRepositorio | undefined;
   identidade?: ConfigIdentidade | undefined;
   mestre?: ConfigMestre | undefined;
+  vinculo?: ConfigVinculo | undefined;
   /**
    * Identificador explícito (DEV_USUARIO ou os testes). Roda depois do cookie de sessão
    * e, se definir o usuário, tem precedência sobre ele.
@@ -59,6 +67,7 @@ export async function buildApp({
   historicoRepo,
   identidade,
   mestre,
+  vinculo,
   identificar,
   origemFrontend = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173",
   hoje = hojeNoBrasil,
@@ -117,6 +126,7 @@ export async function buildApp({
   }
   await app.register(rotasCardapio(criarServicoCardapio(cardapioRepo), hoje));
   if (historicoRepo) await app.register(rotasHistorico(criarServicoHistorico(historicoRepo)));
+  if (vinculo) await app.register(rotasVinculo(criarServicoVinculo(vinculo.repo, vinculo.armazenamento)));
   if (mestre) {
     const contas = criarServicoContas(mestre.contasRepo, mestre.hasher ?? hasherArgon2);
     await app.register(rotasMestre(contas, criarServicoLogs(mestre.logsRepo)));
