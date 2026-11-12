@@ -2,7 +2,7 @@ import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 
 // Provedor de pagamento atrás de uma interface (ADR-006, CLAUDE.md). Hoje existe a versão
-// simulada; o adaptador do Mercado Pago (sandbox) entra no mesmo contrato, sem mudar quem usa.
+// simulada (o provedor real, como o Mercado Pago, está fora do MVP); um adaptador real entraria no mesmo contrato, sem mudar quem usa.
 
 export type CobrancaCriada = {
   /** Identificador da cobrança no provedor. Único: é a chave da idempotência. */

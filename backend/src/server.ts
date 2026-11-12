@@ -14,7 +14,7 @@ import { criarRepositorioPrisma } from "./modules/cardapio/repositorio.js";
 import { criarRepositorioHistoricoPrisma } from "./modules/historico/repositorio.js";
 import { criarRepositorioIdentidadePrisma } from "./modules/identidade/repositorio.js";
 
-// Provedor de pagamento: por enquanto só o simulado (o adaptador do Mercado Pago entra no mesmo contrato).
+// Provedor de pagamento: no MVP só o simulado (provedor real fica fora do MVP; entraria no mesmo contrato).
 const segredoWebhook = process.env.PAGAMENTO_WEBHOOK_SEGREDO ?? (process.env.NODE_ENV === "production" ? undefined : "segredo-de-desenvolvimento");
 if (!segredoWebhook) throw new Error("Defina PAGAMENTO_WEBHOOK_SEGREDO para rodar em produção.");
 
