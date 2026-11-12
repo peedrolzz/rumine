@@ -14,6 +14,7 @@ import Cadastro from "./paginas/publico/Cadastro";
 import ConfirmarEmail from "./paginas/publico/ConfirmarEmail";
 import Entrar from "./paginas/publico/Entrar";
 import Cardapio from "./paginas/usuario/Cardapio";
+import Inicio from "./paginas/usuario/Inicio";
 import Historico from "./paginas/usuario/Historico";
 import Perfil from "./paginas/usuario/Perfil";
 import StatusCadastro from "./paginas/usuario/StatusCadastro";
@@ -40,7 +41,7 @@ export default function App() {
         <Route path="/status-cadastro" element={<StatusCadastro />} />
         {/* Só com o cadastro ativo. Cada perfil abre só as telas dele (o backend também barra). */}
         <Route element={<LayoutApp />}>
-          <Route path="/" element={<InicioPorPerfil inicioUsuario={<Pagina titulo="Início" />} />} />
+          <Route path="/" element={<InicioPorPerfil inicioUsuario={<Inicio />} />} />
           <Route path="/perfil" element={<Perfil />} />
 
           <Route element={<RotaPorPerfil perfis={["USUARIO"]} />}>
