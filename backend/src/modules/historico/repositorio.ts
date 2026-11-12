@@ -1,6 +1,6 @@
 import type { PrismaClient } from "../../../generated/prisma/client.js";
 import type { TipoTransacao } from "../../../generated/prisma/enums.js";
-import type { Posicao } from "./cursor.js";
+import type { Posicao } from "../../shared/cursor.js";
 
 // REFEICAO_ISENTA = refeição de aluno PAE: gera consumo, mas nenhuma transação (valor zero).
 export type TipoMovimento = TipoTransacao | "REFEICAO_ISENTA";

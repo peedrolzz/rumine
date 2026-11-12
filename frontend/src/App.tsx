@@ -1,10 +1,14 @@
 // frontend/src/App.tsx - rotas públicas (entrar, cadastro, confirmação) e rotas atrás do login
 import { Box, Typography } from "@mui/material";
 import { Route, Routes } from "react-router-dom";
+import RotaPorPerfil, { InicioPorPerfil } from "./auth/RotaPorPerfil";
 import RotaProtegida from "./auth/RotaProtegida";
+import EmBreve from "./componentes/EmBreve";
 import LayoutApp from "./layout/LayoutApp";
 import LayoutPublico from "./layout/LayoutPublico";
 import CadastrarCardapio from "./paginas/admin/CadastrarCardapio";
+import Logs from "./paginas/mestre/Logs";
+import NovaConta from "./paginas/mestre/NovaConta";
 import Cadastro from "./paginas/publico/Cadastro";
 import ConfirmarEmail from "./paginas/publico/ConfirmarEmail";
 import Entrar from "./paginas/publico/Entrar";
@@ -33,14 +37,40 @@ export default function App() {
       {/* Atrás do login. */}
       <Route element={<RotaProtegida />}>
         <Route path="/status-cadastro" element={<StatusCadastro />} />
-        {/* Só com o cadastro ativo; o menu por perfil é da HU-03. */}
+        {/* Só com o cadastro ativo. Cada perfil abre só as telas dele (o backend também barra). */}
         <Route element={<LayoutApp />}>
-          <Route path="/" element={<Pagina titulo="Início" />} />
-          <Route path="/recarga" element={<Pagina titulo="Recarregar" />} />
-          <Route path="/historico" element={<Historico />} />
-          <Route path="/cardapio" element={<Cardapio />} />
+          <Route path="/" element={<InicioPorPerfil inicioUsuario={<Pagina titulo="Início" />} />} />
           <Route path="/perfil" element={<Perfil />} />
-          <Route path="/admin/cardapio" element={<CadastrarCardapio />} />
+
+          <Route element={<RotaPorPerfil perfis={["USUARIO"]} />}>
+            <Route path="/recarga" element={<Pagina titulo="Recarregar" />} />
+            <Route path="/historico" element={<Historico />} />
+            <Route path="/cardapio" element={<Cardapio />} />
+          </Route>
+
+          <Route element={<RotaPorPerfil perfis={["OPERADOR"]} />}>
+            <Route
+              path="/operador/leitura"
+              element={<EmBreve titulo="Ler QR Code" descricao="A leitura do QR Code do aluno chega com a HU-07." />}
+            />
+          </Route>
+
+          <Route element={<RotaPorPerfil perfis={["ADMIN"]} />}>
+            <Route path="/admin/cardapio" element={<CadastrarCardapio />} />
+            <Route
+              path="/admin/cadastros"
+              element={<EmBreve titulo="Cadastros" descricao="A aprovação de cadastros chega com a HU-20." />}
+            />
+            <Route
+              path="/admin/historico"
+              element={<EmBreve titulo="Histórico geral" descricao="O histórico geral chega com a HU-10." />}
+            />
+          </Route>
+
+          <Route element={<RotaPorPerfil perfis={["MESTRE"]} />}>
+            <Route path="/mestre/contas" element={<NovaConta />} />
+            <Route path="/mestre/logs" element={<Logs />} />
+          </Route>
         </Route>
       </Route>
     </Routes>

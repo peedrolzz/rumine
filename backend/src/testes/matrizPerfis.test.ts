@@ -1,0 +1,126 @@
+import { describe, expect, it } from "vitest";
+import { buildApp } from "../app.js";
+import type { Identificador } from "../shared/auth.js";
+import type { PerfilUsuario } from "../../generated/prisma/enums.js";
+import type { CardapioRepositorio } from "../modules/cardapio/repositorio.js";
+import type { HistoricoRepositorio } from "../modules/historico/repositorio.js";
+import { criarRepoIdentidadeFalso } from "./identidadeFalsa.js";
+
+// Matriz de acesso (HU-03): cada rota existente × cada perfil (e sem login).
+// Quem cria uma rota nova protegida por perfil deve acrescentar uma linha aqui.
+// Um teste confere que a matriz cobre todas as rotas registradas no app.
+
+const PERFIS: PerfilUsuario[] = ["USUARIO", "OPERADOR", "ADMIN", "MESTRE"];
+const TODOS = PERFIS;
+
+type Rota = {
+  metodo: "GET" | "POST" | "PUT";
+  url: string;
+  /** Rota registrada no Fastify (para conferir a cobertura). */
+  padrao: string;
+  /** Perfis que passam da proteção. Os outros recebem 403 e quem não entrou recebe 401. */
+  permitidos: PerfilUsuario[];
+  corpo?: unknown;
+};
+
+const ROTAS: Rota[] = [
+  { metodo: "GET", url: "/cardapios/2026-11-10", padrao: "/cardapios/:data", permitidos: TODOS },
+  { metodo: "PUT", url: "/cardapios/2026-11-10", padrao: "/cardapios/:data", permitidos: ["ADMIN"], corpo: { itens: [] } },
+  { metodo: "GET", url: "/historico", padrao: "/historico", permitidos: TODOS },
+  { metodo: "POST", url: "/mestre/contas", padrao: "/mestre/contas", permitidos: ["MESTRE"], corpo: {} },
+  { metodo: "GET", url: "/mestre/logs", padrao: "/mestre/logs", permitidos: ["MESTRE"] },
+];
+
+// Rotas públicas ou que se protegem sozinhas (sessão), fora da matriz de perfis.
+const FORA_DA_MATRIZ = [
+  "GET /health",
+  "POST /auth/cadastro",
+  "POST /auth/confirmar-email",
+  "POST /auth/login",
+  "POST /auth/logout",
+  "GET /auth/me",
+];
+
+const cardapioRepo: CardapioRepositorio = {
+  async salvar(data) {
+    return { data, itens: [] };
+  },
+  async buscar() {
+    return null;
+  },
+};
+const historicoRepo: HistoricoRepositorio = {
+  async transacoes() {
+    return [];
+  },
+  async refeicoesIsentas() {
+    return [];
+  },
+};
+
+const identificar: Identificador = (request) => {
+  const perfil = request.headers["x-perfil"];
+  if (typeof perfil === "string") request.usuario = { id: "00000000-0000-4000-8000-000000000001", perfil: perfil as PerfilUsuario };
+};
+
+async function montar() {
+  const app = await buildApp({
+    cardapioRepo,
+    historicoRepo,
+    identidade: { repo: criarRepoIdentidadeFalso().repo },
+    mestre: {
+      contasRepo: { criarConta: async () => "EMAIL_JA_CADASTRADO", existeMestreComLogin: async () => true },
+      logsRepo: { listar: async () => [] },
+    },
+    identificar,
+    hoje: () => "2026-11-10",
+  });
+  return { app };
+}
+
+describe("matriz de acesso por perfil", () => {
+  for (const rota of ROTAS) {
+    describe(`${rota.metodo} ${rota.url}`, () => {
+      const chamar = async (perfil?: PerfilUsuario) => {
+        const { app } = await montar();
+        return app.inject({
+          method: rota.metodo,
+          url: rota.url,
+          headers: perfil ? { "x-perfil": perfil } : {},
+          ...(rota.corpo !== undefined && { payload: rota.corpo as object }),
+        });
+      };
+
+      it("sem login: 401", async () => {
+        expect((await chamar()).statusCode).toBe(401);
+      });
+
+      for (const perfil of PERFIS) {
+        if (rota.permitidos.includes(perfil)) {
+          it(`${perfil} passa da proteção (nem 401 nem 403)`, async () => {
+            const r = await chamar(perfil);
+            expect([401, 403]).not.toContain(r.statusCode);
+          });
+        } else {
+          it(`${perfil} é barrado: 403 com mensagem em português`, async () => {
+            const r = await chamar(perfil);
+            expect(r.statusCode).toBe(403);
+            expect(r.json().mensagem).toBe("Você não tem permissão para esta ação.");
+          });
+        }
+      }
+    });
+  }
+
+  it("cobre todas as rotas do app (rota nova sem linha na matriz quebra aqui)", async () => {
+    const { app } = await montar();
+    await app.ready();
+    const registradas = new Set<string>();
+    for (const metodo of ["GET", "POST", "PUT", "PATCH", "DELETE"]) {
+      const texto = app.printRoutes({ commonPrefix: false, method: metodo });
+      for (const m of texto.matchAll(/(\/\S*) \((\w+)\)/g)) registradas.add(`${m[2]} ${m[1]}`);
+    }
+    const conhecidas = new Set([...ROTAS.map((r) => `${r.metodo} ${r.padrao}`), ...FORA_DA_MATRIZ]);
+    expect([...registradas].sort()).toEqual([...conhecidas].sort());
+  });
+});

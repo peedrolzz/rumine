@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { exigirPerfil } from "../../shared/auth.js";
 import { validar } from "../../shared/validacao.js";
-import { decodificarCursor } from "./cursor.js";
+import { decodificarCursor } from "../../shared/cursor.js";
 import { consultaHistorico } from "./esquemas.js";
 import type { ServicoHistorico } from "./servico.js";
 

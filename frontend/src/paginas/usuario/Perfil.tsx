@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Alert, Box, Button, Divider, Stack, Typography } from "@mui/material";
 import { ErroApi } from "../../api/cliente";
 import { useAuth } from "../../auth/contexto";
+import { NOME_PERFIL } from "../../auth/perfis";
 
 const CATEGORIAS = { DISCENTE: "Discente", DOCENTE: "Docente", SERVIDOR: "Servidor", VISITANTE: "Visitante" } as const;
 
@@ -44,6 +45,12 @@ export default function Perfil() {
             E-mail
           </Typography>
           <Typography sx={{ overflowWrap: "anywhere" }}>{usuario.email}</Typography>
+        </Box>
+        <Box>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            Perfil de acesso
+          </Typography>
+          <Typography>{NOME_PERFIL[usuario.perfil]}</Typography>
         </Box>
         <Box>
           <Typography variant="body2" sx={{ color: "text.secondary" }}>

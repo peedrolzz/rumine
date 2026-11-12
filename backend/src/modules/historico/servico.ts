@@ -1,4 +1,4 @@
-import { codificarCursor, type Posicao } from "./cursor.js";
+import { codificarCursor, type Posicao } from "../../shared/cursor.js";
 import type { Filtro } from "./esquemas.js";
 import type { HistoricoRepositorio, Movimento } from "./repositorio.js";
 
