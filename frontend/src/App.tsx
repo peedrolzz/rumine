@@ -7,6 +7,7 @@ import EmBreve from "./componentes/EmBreve";
 import LayoutApp from "./layout/LayoutApp";
 import LayoutPublico from "./layout/LayoutPublico";
 import CadastrarCardapio from "./paginas/admin/CadastrarCardapio";
+import Cadastros from "./paginas/admin/Cadastros";
 import Logs from "./paginas/mestre/Logs";
 import NovaConta from "./paginas/mestre/NovaConta";
 import Cadastro from "./paginas/publico/Cadastro";
@@ -57,10 +58,7 @@ export default function App() {
 
           <Route element={<RotaPorPerfil perfis={["ADMIN"]} />}>
             <Route path="/admin/cardapio" element={<CadastrarCardapio />} />
-            <Route
-              path="/admin/cadastros"
-              element={<EmBreve titulo="Cadastros" descricao="A aprovação de cadastros chega com a HU-20." />}
-            />
+            <Route path="/admin/cadastros" element={<Cadastros />} />
             <Route
               path="/admin/historico"
               element={<EmBreve titulo="Histórico geral" descricao="O histórico geral chega com a HU-10." />}
