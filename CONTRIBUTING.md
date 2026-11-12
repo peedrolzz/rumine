@@ -77,6 +77,15 @@ O login é de verdade (HU-01): senha com **Argon2id** (`@node-rs/argon2`, que j�
 
 Para quem desenvolve: proteja as rotas com `exigirPerfil(...)` (a sessão é lida do cookie `rumine_sessao`), e no front envie as requisições com `credentials: "include"` (o `api/cliente.ts` já faz isso). Toda requisição que altera dados precisa vir do endereço do front (`FRONTEND_ORIGIN`, por padrão `http://localhost:5173`): abrir o app por `127.0.0.1` em vez de `localhost` dá erro 403 "Origem não permitida". No front, telas que exigem login entram dentro do `<RotaProtegida>` em `App.tsx` (as que exigem cadastro ativo, dentro do `<LayoutApp>`), e `useAuth()` entrega o usuário logado. Uma chamada que volta 401 já leva ao login sozinha, com o aviso de sessão expirada.
 
+### Perfis de acesso e usuários iniciais (HU-03)
+
+Cada perfil vê só o que usa: **Usuário** (carteira, histórico, cardápio), **Operador** (só a leitura do QR Code), **Admin** (cardápio, cadastros e histórico geral) e **Mestre** (criar contas e consultar logs). O menu e a guarda de rota do front só escondem as telas; **quem barra de verdade é o backend** (`exigirPerfil`: 401 sem login, 403 com perfil errado).
+
+- **Primeiro Mestre:** em `backend/`, rode `npm run criar-mestre -- "Nome Completo" email@exemplo.com`. A senha é pedida no terminal (não aparece na tela). O script recusa se já existir um Mestre que consiga entrar; os usuários de exemplo do seed não contam. Depois, entre pelo login normal.
+- **Admin e Operador:** o Mestre cria pelo app, na aba **Contas** (`POST /mestre/contas`). A conta já nasce ativa, com uma senha temporária que o Mestre combina com a pessoa. Toda criação de conta vai para o log, com data e autor, e aparece na aba **Logs**.
+- **Rota nova protegida por perfil:** use `exigirPerfil(...)` no backend e acrescente uma linha em `backend/src/testes/matrizPerfis.test.ts` (um teste quebra se a rota não estiver na matriz). No front, a tela entra dentro de um `<RotaPorPerfil perfis={[...]}>` em `App.tsx` e o item do menu em `layout/LayoutApp.tsx`.
+- **Ação sensível nova** (ex.: aprovar cadastro): grave o log com `registrarLog(tx, {...})` (`modules/auditoria/registro.ts`) na mesma transação da ação. Nunca coloque senha, hash ou token nos detalhes.
+
 ## 5. Fluxo de trabalho por história
 
 Cada história (HU) é um *issue* no quadro do GitHub Projects. O fluxo é sempre o mesmo:

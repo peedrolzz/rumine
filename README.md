@@ -89,6 +89,7 @@ copy .env.example .env      # Mac/Linux: cp .env.example .env
 npm install
 npx prisma migrate dev
 npm run seed                # câmpus e usuários de exemplo
+npm run criar-mestre -- "Seu Nome" voce@exemplo.com   # (opcional) Mestre de verdade; veja o CONTRIBUTING
 npm run dev                 # http://localhost:3000/health
 
 # 3. Frontend (terminal 2)
