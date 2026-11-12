@@ -107,6 +107,16 @@ O Admin analisa a fila em **Cadastros** (`GET /admin/cadastros`): vê nome, e-ma
 
 `GET /carteira` devolve o saldo do próprio usuário em **centavos** (`saldoCentavos`) e `atualizadoEm`; só o perfil Usuário com cadastro aprovado (usa `exigirCadastroAtivo()`). A tela Início mostra `R$ 1.234,50`, o atalho **Recarregar** e busca o saldo de novo ao voltar para o app. O banco já tem `CHECK (saldo_centavos >= 0)` (desde a migração `init`): quem alterar o saldo (recarga, débito) deve fazê-lo em `$transaction` com `SELECT ... FOR UPDATE`, e o banco recusa qualquer resultado negativo.
 
+### Recarga por Pix (HU-05)
+
+O usuário escolhe o valor (**R$ 5,00 a R$ 200,00**), recebe um código Pix e a tela acompanha o pagamento. **O saldo só aumenta quando o provedor confirma** (RN-03); se o pagamento for recusado ou expirar, o saldo não muda e o motivo aparece (RN-04).
+
+- **Provedor atrás de uma interface:** `modules/recarga/gateway.ts` (`GatewayPagamento`). Hoje só existe a versão **simulada**; o adaptador do Mercado Pago (sandbox, ADR-006) entra no mesmo contrato, em outro PR, quando houver credenciais e URL pública para o webhook.
+- **Webhook:** `POST /webhooks/pagamento` é público e **só vale com assinatura** (HMAC-SHA256 do corpo no cabeçalho `x-assinatura`, com o segredo `PAGAMENTO_WEBHOOK_SEGREDO`; em desenvolvimento há um segredo padrão, em produção ele é **obrigatório**). A confirmação é **idempotente**: o mesmo pagamento avisado várias vezes (inclusive ao mesmo tempo) credita uma só vez, porque a cobrança e a carteira são travadas com `SELECT ... FOR UPDATE` na mesma transação. Aviso com valor diferente do cobrado não credita nada.
+- **Testar sem provedor:** com o backend fora de produção, a tela mostra os botões **Simular pagamento aprovado/recusado**, que passam pelo mesmo caminho do webhook (`POST /dev/recargas/:id/simular`). Em produção essa rota não existe.
+- **Migração nova:** rode `npx prisma migrate dev` em `backend/` (acrescenta `motivo_falha` e `codigo_pagamento` em `cobranca_recarga`).
+- **Limites e prazo:** constantes em `modules/recarga/servico.ts` (valor mínimo e máximo, 30 minutos para pagar, no máximo 3 recargas pendentes por pessoa).
+
 ## 5. Fluxo de trabalho por história
 
 Cada história (HU) é um *issue* no quadro do GitHub Projects. O fluxo é sempre o mesmo:

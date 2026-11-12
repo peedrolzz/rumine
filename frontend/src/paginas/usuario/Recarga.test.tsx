@@ -306,6 +306,19 @@ describe("acompanhando o pagamento", () => {
     expect(backend.vezes("GET", "/recargas/r-1")).toBe(0);
   });
 
+  it("se sair da tela com uma consulta no ar, a resposta tardia não reativa a consulta", async () => {
+    renderApp("/recarga");
+    await screen.findByRole("heading", { name: "Recarregar" });
+    const u = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await aguardando(u);
+    const lenta = backend.adiar("GET", "/recargas/r-1");
+    await passar(INTERVALO_CONSULTA_MS); // a consulta sai e fica esperando
+    cleanup(); // a pessoa sai da tela
+    lenta.resolver({ status: 200, corpo: atual });
+    await passar(INTERVALO_CONSULTA_MS * 3);
+    expect(backend.vezes("GET", "/recargas/r-1")).toBe(1);
+  });
+
   it("nova recarga depois do sucesso: volta ao formulário limpo", async () => {
     const u = await abrir();
     await aguardando(u);
