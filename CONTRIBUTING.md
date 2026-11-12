@@ -96,6 +96,13 @@ Depois de confirmar o e-mail, a pessoa informa o **RA** e envia a **declaração
 - **Testar sem a tela do Admin (HU-20):** para simular a decisão, mude o status direto no banco, por exemplo `update usuario set status='ATIVO' where email='...'` (aprovar) ou `status='REJEITADO'` (e, para ver o motivo, insira uma linha em `analise_cadastro` com `decisao='REJEITADO'`).
 - **Arquivo novo em outras histórias:** use sempre a interface `Armazenamento` e valide o tipo pelo conteúdo (`modules/vinculo/arquivo.ts`).
 
+### Aprovação de cadastros (HU-20)
+
+O Admin analisa a fila em **Cadastros** (`GET /admin/cadastros`): vê nome, e-mail, RA e abre a declaração; depois **aprova** (`POST /admin/cadastros/:usuarioId/aprovar`) ou **rejeita com motivo obrigatório**, de 5 a 300 caracteres (`.../rejeitar`). A decisão grava quem decidiu e quando (`analise_cadastro`) e vai para o log de auditoria. Aprovar também cria a **carteira com saldo zero**. Se outro Admin decidir antes, a resposta é 409 e a tela atualiza a lista. Quem foi rejeitado vê o motivo e pode reenviar (HU-02), voltando para a fila.
+
+- **Rotas que exigem cadastro aprovado** (recarga, QR Code e as próximas): depois de `exigirPerfil(...)`, acrescente `exigirCadastroAtivo()` (`shared/auth.ts`). Conta em análise ou rejeitada recebe 403 com `codigo: "CADASTRO_PENDENTE"`. A sessão já traz o `status` do usuário.
+- **Testar em desenvolvimento:** crie um Admin pelo Mestre (aba Contas), cadastre um aluno, envie o vínculo e decida pela aba **Cadastros**. O comando SQL de aprovar à mão (seção anterior) não é mais necessário.
+
 ## 5. Fluxo de trabalho por história
 
 Cada história (HU) é um *issue* no quadro do GitHub Projects. O fluxo é sempre o mesmo:

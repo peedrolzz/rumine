@@ -180,6 +180,12 @@ describe("GET /admin/cadastros", () => {
     expect(vistos).toEqual([1, 2, 3, 4, 5].map(uuid));
   });
 
+  it("página exata não anuncia próxima página", async () => {
+    const c = await montar([pendente(1, 1), pendente(2, 2)]);
+    expect((await listar(c, "?limite=2")).json().proximoCursor).toBeNull();
+    expect((await listar(c, "?limite=1")).json().proximoCursor).not.toBeNull();
+  });
+
   it.each(["0", "51", "-1", "abc", "1.5"])("limite %s recusado", async (limite) => {
     const c = await montar();
     const r = await listar(c, `?limite=${limite}`);
