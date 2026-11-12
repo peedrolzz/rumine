@@ -1,4 +1,4 @@
-import type { PerfilUsuario } from "../../../generated/prisma/enums.js";
+import type { PerfilUsuario, StatusUsuario } from "../../../generated/prisma/enums.js";
 import { CATEGORIA_CADASTRO, type DadosCadastro } from "./esquemas.js";
 import type { Limitador } from "./limitador.js";
 import { EMAIL_JA_CADASTRADO, type IdentidadeRepositorio, type UsuarioRegistro } from "./repositorio.js";
@@ -16,7 +16,7 @@ export type ResultadoLogin =
   | { tipo: "CREDENCIAIS" | "BLOQUEADO" | "DESATIVADO" | "EMAIL_NAO_CONFIRMADO" };
 
 export type ResultadoSessao =
-  | { tipo: "OK"; usuario: { id: string; perfil: PerfilUsuario } }
+  | { tipo: "OK"; usuario: { id: string; perfil: PerfilUsuario; status: StatusUsuario } }
   | { tipo: "EXPIRADA" | "NENHUMA" };
 
 export type DependenciasServico = {
@@ -131,7 +131,7 @@ export function criarServicoIdentidade({ repo, hasher, email, limitador, urlFron
       if (!sessao || sessao.revogadaEm) return { tipo: "NENHUMA" };
       if (sessao.expiraEm.getTime() <= agora().getTime()) return { tipo: "EXPIRADA" };
       if (sessao.usuario.status === "DESATIVADO") return { tipo: "NENHUMA" };
-      return { tipo: "OK", usuario: { id: sessao.usuario.id, perfil: sessao.usuario.perfil } };
+      return { tipo: "OK", usuario: { id: sessao.usuario.id, perfil: sessao.usuario.perfil, status: sessao.usuario.status } };
     },
 
     sair: (token: string) => repo.revogarSessao(hashToken(token), agora()),

@@ -30,6 +30,20 @@ const ROTAS: Rota[] = [
   { metodo: "GET", url: "/historico", padrao: "/historico", permitidos: TODOS },
   { metodo: "POST", url: "/mestre/contas", padrao: "/mestre/contas", permitidos: ["MESTRE"], corpo: {} },
   { metodo: "GET", url: "/mestre/logs", padrao: "/mestre/logs", permitidos: ["MESTRE"] },
+  { metodo: "GET", url: "/admin/cadastros", padrao: "/admin/cadastros", permitidos: ["ADMIN"] },
+  {
+    metodo: "POST",
+    url: "/admin/cadastros/00000000-0000-4000-8000-000000000009/aprovar",
+    padrao: "/admin/cadastros/:usuarioId/aprovar",
+    permitidos: ["ADMIN"],
+  },
+  {
+    metodo: "POST",
+    url: "/admin/cadastros/00000000-0000-4000-8000-000000000009/rejeitar",
+    padrao: "/admin/cadastros/:usuarioId/rejeitar",
+    permitidos: ["ADMIN"],
+    corpo: {},
+  },
   { metodo: "GET", url: "/vinculo", padrao: "/vinculo", permitidos: ["USUARIO"] },
   { metodo: "POST", url: "/vinculo", padrao: "/vinculo", permitidos: ["USUARIO"] },
   {
@@ -92,6 +106,7 @@ async function montar() {
       logsRepo: { listar: async () => [] },
     },
     vinculo,
+    cadastrosRepo: { listarPendentes: async () => [], decidir: async () => "NAO_ENCONTRADO" },
     identificar,
     hoje: () => "2026-11-10",
   });
