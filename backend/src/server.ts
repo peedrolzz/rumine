@@ -8,6 +8,7 @@ import { criarArmazenamentoEmDisco } from "./shared/armazenamento.js";
 import { criarRepositorioVinculoPrisma } from "./modules/vinculo/repositorio.js";
 import { criarRepositorioCadastrosPrisma } from "./modules/cadastros/repositorio.js";
 import { criarRepositorioCarteiraPrisma } from "./modules/carteira/repositorio.js";
+import { simulacaoDemoEmProducao, simulacaoHabilitada } from "./modules/recarga/config.js";
 import { criarGatewaySimulado } from "./modules/recarga/gateway.js";
 import { criarRepositorioRecargaPrisma } from "./modules/recarga/repositorio.js";
 import { criarRepositorioPrisma } from "./modules/cardapio/repositorio.js";
@@ -30,11 +31,21 @@ const app = await buildApp({
   },
   cadastrosRepo: criarRepositorioCadastrosPrisma(prisma),
   carteiraRepo: criarRepositorioCarteiraPrisma(prisma),
-  recarga: { repo: criarRepositorioRecargaPrisma(prisma), gateway: criarGatewaySimulado(segredoWebhook) },
+  recarga: {
+    repo: criarRepositorioRecargaPrisma(prisma),
+    gateway: criarGatewaySimulado(segredoWebhook),
+    // Fora de produção sempre; em produção só com PAGAMENTO_SIMULACAO_DEMO=true (ambiente de demonstração).
+    simulacao: simulacaoHabilitada(process.env),
+  },
   identificar,
   logger: true,
 });
 if (identificar) {
   app.log.warn(`Modo desenvolvimento: usuário fixo ${process.env.DEV_USUARIO}. O login real fica ignorado.`);
+}
+if (simulacaoDemoEmProducao(process.env)) {
+  app.log.warn(
+    "MODO DEMONSTRAÇÃO: o pagamento simulado está LIGADO em produção. Qualquer conta aprovada pode creditar saldo de mentira. Nunca use com dinheiro real.",
+  );
 }
 await app.listen({ port: Number(process.env.PORT ?? 3000), host: "0.0.0.0" });

@@ -281,7 +281,7 @@ export default function Recarga() {
           {recarga.simulacao && (
             <Paper variant="outlined" sx={{ p: 2, borderStyle: "dashed" }}>
               <Typography variant="body2" sx={{ mb: 1, color: "text.secondary" }}>
-                Só desenvolvimento: simule a resposta do banco.
+                Modo demonstração: simule a resposta do banco. Nenhum dinheiro de verdade é usado.
               </Typography>
               {erroSimulacao && (
                 <Alert severity="error" sx={{ mb: 1 }}>
