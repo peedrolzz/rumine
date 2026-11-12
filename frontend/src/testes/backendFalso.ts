@@ -36,6 +36,8 @@ export function criarBackendFalso(opcoes: { usuario?: Usuario; logado?: boolean 
     logado: opcoes.logado ?? false,
     /** Quando true e não logado, /auth/me responde SESSAO_EXPIRADA em vez de "faça login". */
     expirada: false,
+    /** Saldo da carteira, devolvido por GET /carteira. */
+    carteira: { saldoCentavos: 1250, atualizadoEm: "2026-11-10T15:00:00.000Z" as string | null },
     /** Vínculo (RA e declaração) da conta, devolvido por GET /vinculo junto com o status do usuário. */
     vinculo: {
       identificador: "a2345678" as string | null,
@@ -67,6 +69,7 @@ export function criarBackendFalso(opcoes: { usuario?: Usuario; logado?: boolean 
     }
     return { status: 401, corpo: { mensagem: "E-mail ou senha incorretos." } };
   });
+  rota("GET", "/carteira", () => ({ status: 200, corpo: sessao.carteira }), { protegida: true });
   rota(
     "GET",
     "/vinculo",

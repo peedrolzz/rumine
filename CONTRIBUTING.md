@@ -103,6 +103,10 @@ O Admin analisa a fila em **Cadastros** (`GET /admin/cadastros`): vê nome, e-ma
 - **Rotas que exigem cadastro aprovado** (recarga, QR Code e as próximas): depois de `exigirPerfil(...)`, acrescente `exigirCadastroAtivo()` (`shared/auth.ts`). Conta em análise ou rejeitada recebe 403 com `codigo: "CADASTRO_PENDENTE"`. A sessão já traz o `status` do usuário.
 - **Testar em desenvolvimento:** crie um Admin pelo Mestre (aba Contas), cadastre um aluno, envie o vínculo e decida pela aba **Cadastros**. O comando SQL de aprovar à mão (seção anterior) não é mais necessário.
 
+### Saldo da carteira (HU-04)
+
+`GET /carteira` devolve o saldo do próprio usuário em **centavos** (`saldoCentavos`) e `atualizadoEm`; só o perfil Usuário com cadastro aprovado (usa `exigirCadastroAtivo()`). A tela Início mostra `R$ 1.234,50`, o atalho **Recarregar** e busca o saldo de novo ao voltar para o app. O banco já tem `CHECK (saldo_centavos >= 0)` (desde a migração `init`): quem alterar o saldo (recarga, débito) deve fazê-lo em `$transaction` com `SELECT ... FOR UPDATE`, e o banco recusa qualquer resultado negativo.
+
 ## 5. Fluxo de trabalho por história
 
 Cada história (HU) é um *issue* no quadro do GitHub Projects. O fluxo é sempre o mesmo:
