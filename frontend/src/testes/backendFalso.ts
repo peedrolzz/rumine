@@ -17,7 +17,14 @@ export const USUARIO_ATIVO: Usuario = {
 };
 export const SENHA = "Senha@123";
 
-export type Chamada = { metodo: string; caminho: string; consulta: string; corpo: Corpo | undefined };
+export type Chamada = {
+  metodo: string;
+  caminho: string;
+  consulta: string;
+  corpo: Corpo | undefined;
+  /** Envio de arquivo (multipart): os campos exatamente como o navegador mandaria. */
+  formulario?: FormData;
+};
 
 export function criarBackendFalso(opcoes: { usuario?: Usuario; logado?: boolean } = {}) {
   const rotas = new Map<string, Manipulador>();
@@ -29,6 +36,12 @@ export function criarBackendFalso(opcoes: { usuario?: Usuario; logado?: boolean 
     logado: opcoes.logado ?? false,
     /** Quando true e não logado, /auth/me responde SESSAO_EXPIRADA em vez de "faça login". */
     expirada: false,
+    /** Vínculo (RA e declaração) da conta, devolvido por GET /vinculo junto com o status do usuário. */
+    vinculo: {
+      identificador: "a2345678" as string | null,
+      declaracaoEnviadaEm: "2026-11-10T15:00:00.000Z" as string | null,
+      motivoRejeicao: null as string | null,
+    },
   };
 
   const naoAutenticado = (): RespostaFalsa =>
@@ -54,6 +67,12 @@ export function criarBackendFalso(opcoes: { usuario?: Usuario; logado?: boolean 
     }
     return { status: 401, corpo: { mensagem: "E-mail ou senha incorretos." } };
   });
+  rota(
+    "GET",
+    "/vinculo",
+    () => ({ status: 200, corpo: { status: sessao.usuario.status, ...sessao.vinculo } }),
+    { protegida: true },
+  );
   rota("POST", "/auth/logout", () => {
     sessao.logado = false;
     return { status: 204 };
@@ -62,8 +81,13 @@ export function criarBackendFalso(opcoes: { usuario?: Usuario; logado?: boolean 
   const fetchFalso = vi.fn(async (endereco: string, init?: RequestInit) => {
     const url = new URL(endereco);
     const metodo = init?.method ?? "GET";
-    const corpo = init?.body ? (JSON.parse(String(init.body)) as Corpo) : undefined;
-    chamadas.push({ metodo, caminho: url.pathname, consulta: url.search, corpo });
+    const formulario = init?.body instanceof FormData ? init.body : undefined;
+    const corpo = formulario
+      ? (Object.fromEntries([...formulario.entries()].map(([k, v]) => [k, typeof v === "string" ? v : v.name])) as Corpo)
+      : init?.body
+        ? (JSON.parse(String(init.body)) as Corpo)
+        : undefined;
+    chamadas.push({ metodo, caminho: url.pathname, consulta: url.search, corpo, ...(formulario && { formulario }) });
 
     const chave = `${metodo} ${url.pathname}`;
     const manipulador = rotas.get(chave);

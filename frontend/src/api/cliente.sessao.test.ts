@@ -110,3 +110,26 @@ describe("aviso de 401 (sessão acabou)", () => {
     await expect(requisitar("/historico")).rejects.toMatchObject({ status: 401 });
   });
 });
+
+describe("envio de arquivo (FormData)", () => {
+  it("manda o formulário como está, sem Content-Type fixo (o navegador acrescenta o separador)", async () => {
+    const f = simular(json(201, { status: "PENDENTE_APROVACAO" }));
+    const corpo = new FormData();
+    corpo.append("identificador", "a2345678");
+    corpo.append("declaracao", new File(["x"], "d.pdf"));
+    await requisitar("/vinculo", { metodo: "POST", corpo });
+    const init = (f.mock.calls as unknown as [string, RequestInit][])[0]![1];
+    expect(init.body).toBe(corpo);
+    expect(init.headers).toEqual({});
+    expect(init.method).toBe("POST");
+    expect(init.credentials).toBe("include");
+  });
+
+  it("corpo comum continua indo como JSON", async () => {
+    const f = simular(json(200, {}));
+    await requisitar("/x", { metodo: "POST", corpo: { a: 1 } });
+    const init = (f.mock.calls as unknown as [string, RequestInit][])[0]![1];
+    expect(init.body).toBe('{"a":1}');
+    expect(init.headers).toEqual({ "Content-Type": "application/json" });
+  });
+});

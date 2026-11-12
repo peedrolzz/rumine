@@ -30,11 +30,13 @@ export function aoNaoAutenticado(tratador: TratadorNaoAutenticado): () => void {
 export async function requisitar<T>(caminho: string, opcoes: { metodo?: string; corpo?: unknown } = {}): Promise<T> {
   let resposta: Response;
   try {
+    // FormData (envio de arquivo) segue como está: o navegador define o Content-Type com o separador.
+    const formulario = opcoes.corpo instanceof FormData ? opcoes.corpo : null;
     resposta = await fetch(`${API_URL}${caminho}`, {
       method: opcoes.metodo ?? "GET",
       credentials: "include",
-      headers: opcoes.corpo ? { "Content-Type": "application/json" } : {},
-      body: opcoes.corpo ? JSON.stringify(opcoes.corpo) : null,
+      headers: opcoes.corpo && !formulario ? { "Content-Type": "application/json" } : {},
+      body: formulario ?? (opcoes.corpo ? JSON.stringify(opcoes.corpo) : null),
     });
   } catch {
     throw new ErroApi("Não foi possível conectar ao servidor. Verifique sua internet e tente de novo.", 0);
