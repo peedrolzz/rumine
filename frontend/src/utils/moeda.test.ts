@@ -42,3 +42,32 @@ describe("formatarReais", () => {
     expect(s).toMatch(/^R\$ \d{1,3}(\.\d{3})*,\d{2}$/);
   });
 });
+
+describe("lerReais", () => {
+  it.each([
+    ["20", 2000],
+    ["5", 500],
+    ["20,5", 2050],
+    ["20,50", 2050],
+    ["0,99", 99],
+    ["0", 0],
+    ["1.234,50", 123450],
+    ["1.234", 123400],
+    ["1234,5", 123450],
+    ["R$ 20", 2000],
+    ["r$20,00", 2000],
+    ["  20  ", 2000],
+    ["200,00", 20000],
+  ])("%j vira %d centavos", async (texto, centavos) => {
+    const { lerReais } = await import("./moeda");
+    expect(lerReais(texto)).toBe(centavos);
+  });
+
+  it.each(["", "   ", "abc", "20,505", "20,", ",50", "1.23", "1..234", "12.34.567", "-5", "+5", "2e3", "20.5", "20,5,5", "R$", "9".repeat(20)])(
+    "%j é inválido",
+    async (texto) => {
+      const { lerReais } = await import("./moeda");
+      expect(lerReais(texto)).toBeNull();
+    },
+  );
+});

@@ -20,6 +20,10 @@ import type { CadastrosRepositorio } from "./modules/cadastros/repositorio.js";
 import { criarServicoCarteira } from "./modules/carteira/servico.js";
 import { rotasCarteira } from "./modules/carteira/rotas.js";
 import type { CarteiraRepositorio } from "./modules/carteira/repositorio.js";
+import type { GatewayPagamento } from "./modules/recarga/gateway.js";
+import type { RecargaRepositorio } from "./modules/recarga/repositorio.js";
+import { rotasRecarga, rotasWebhookPagamento } from "./modules/recarga/rotas.js";
+import { criarServicoRecarga } from "./modules/recarga/servico.js";
 import { rotasHistorico } from "./modules/historico/rotas.js";
 import { criarServicoHistorico } from "./modules/historico/servico.js";
 import type { HistoricoRepositorio } from "./modules/historico/repositorio.js";
@@ -49,6 +53,15 @@ export type ConfigMestre = { contasRepo: ContasRepositorio; logsRepo: LogsReposi
 /** Comprovação de vínculo (HU-02): repositório e armazenamento privado dos arquivos. */
 export type ConfigVinculo = { repo: VinculoRepositorio; armazenamento: Armazenamento };
 
+/** Recarga por pagamento digital (HU-05): repositório e provedor de pagamento (simulado ou real). */
+export type ConfigRecarga = {
+  repo: RecargaRepositorio;
+  gateway: GatewayPagamento;
+  /** Habilita o "simular pagamento" de desenvolvimento. Padrão: só fora de produção. */
+  simulacao?: boolean;
+  agora?: () => Date;
+};
+
 export type Dependencias = {
   cardapioRepo: CardapioRepositorio;
   historicoRepo?: HistoricoRepositorio | undefined;
@@ -59,6 +72,7 @@ export type Dependencias = {
   cadastrosRepo?: CadastrosRepositorio | undefined;
   /** Saldo da carteira (HU-04). */
   carteiraRepo?: CarteiraRepositorio | undefined;
+  recarga?: ConfigRecarga | undefined;
   /**
    * Identificador explícito (DEV_USUARIO ou os testes). Roda depois do cookie de sessão
    * e, se definir o usuário, tem precedência sobre ele.
@@ -80,6 +94,7 @@ export async function buildApp({
   vinculo,
   cadastrosRepo,
   carteiraRepo,
+  recarga,
   identificar,
   origemFrontend = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173",
   hoje = hojeNoBrasil,
@@ -141,6 +156,15 @@ export async function buildApp({
   if (vinculo) await app.register(rotasVinculo(criarServicoVinculo(vinculo.repo, vinculo.armazenamento)));
   if (cadastrosRepo) await app.register(rotasCadastros(criarServicoCadastros(cadastrosRepo)));
   if (carteiraRepo) await app.register(rotasCarteira(criarServicoCarteira(carteiraRepo)));
+  if (recarga) {
+    const servico = criarServicoRecarga({
+      repo: recarga.repo,
+      gateway: recarga.gateway,
+      ...(recarga.agora && { agora: recarga.agora }),
+    });
+    await app.register(rotasRecarga(servico, { simulacao: recarga.simulacao ?? !producao }));
+    await app.register(rotasWebhookPagamento(servico, recarga.gateway));
+  }
   if (mestre) {
     const contas = criarServicoContas(mestre.contasRepo, mestre.hasher ?? hasherArgon2);
     await app.register(rotasMestre(contas, criarServicoLogs(mestre.logsRepo)));

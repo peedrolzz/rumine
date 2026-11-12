@@ -1,5 +1,4 @@
 // frontend/src/App.tsx - rotas públicas (entrar, cadastro, confirmação) e rotas atrás do login
-import { Box, Typography } from "@mui/material";
 import { Route, Routes } from "react-router-dom";
 import RotaPorPerfil, { InicioPorPerfil } from "./auth/RotaPorPerfil";
 import RotaProtegida from "./auth/RotaProtegida";
@@ -15,13 +14,10 @@ import ConfirmarEmail from "./paginas/publico/ConfirmarEmail";
 import Entrar from "./paginas/publico/Entrar";
 import Cardapio from "./paginas/usuario/Cardapio";
 import Inicio from "./paginas/usuario/Inicio";
+import Recarga from "./paginas/usuario/Recarga";
 import Historico from "./paginas/usuario/Historico";
 import Perfil from "./paginas/usuario/Perfil";
 import StatusCadastro from "./paginas/usuario/StatusCadastro";
-
-const Pagina = ({ titulo }: { titulo: string }) => (
-  <Box sx={{ p: 2 }}><Typography variant="h5">{titulo}</Typography></Box>
-);
 
 export default function App() {
   return (
@@ -45,7 +41,7 @@ export default function App() {
           <Route path="/perfil" element={<Perfil />} />
 
           <Route element={<RotaPorPerfil perfis={["USUARIO"]} />}>
-            <Route path="/recarga" element={<Pagina titulo="Recarregar" />} />
+            <Route path="/recarga" element={<Recarga />} />
             <Route path="/historico" element={<Historico />} />
             <Route path="/cardapio" element={<Cardapio />} />
           </Route>

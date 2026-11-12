@@ -4,6 +4,7 @@ import type { Identificador } from "../shared/auth.js";
 import type { PerfilUsuario } from "../../generated/prisma/enums.js";
 import type { CardapioRepositorio } from "../modules/cardapio/repositorio.js";
 import type { HistoricoRepositorio } from "../modules/historico/repositorio.js";
+import { criarGatewaySimulado } from "../modules/recarga/gateway.js";
 import type { VinculoRepositorio } from "../modules/vinculo/repositorio.js";
 import { criarRepoIdentidadeFalso } from "./identidadeFalsa.js";
 
@@ -45,6 +46,15 @@ const ROTAS: Rota[] = [
     corpo: {},
   },
   { metodo: "GET", url: "/carteira", padrao: "/carteira", permitidos: ["USUARIO"] },
+  { metodo: "POST", url: "/recargas", padrao: "/recargas", permitidos: ["USUARIO"], corpo: {} },
+  { metodo: "GET", url: "/recargas/00000000-0000-4000-8000-000000000009", padrao: "/recargas/:id", permitidos: ["USUARIO"] },
+  {
+    metodo: "POST",
+    url: "/dev/recargas/00000000-0000-4000-8000-000000000009/simular",
+    padrao: "/dev/recargas/:id/simular",
+    permitidos: ["USUARIO"],
+    corpo: {},
+  },
   { metodo: "GET", url: "/vinculo", padrao: "/vinculo", permitidos: ["USUARIO"] },
   { metodo: "POST", url: "/vinculo", padrao: "/vinculo", permitidos: ["USUARIO"] },
   {
@@ -61,6 +71,7 @@ const FORA_DA_MATRIZ = [
   "POST /auth/cadastro",
   "POST /auth/confirmar-email",
   "POST /auth/login",
+  "POST /webhooks/pagamento", // pública: quem chama é o provedor; a autenticidade vem da assinatura
   "POST /auth/logout",
   "GET /auth/me",
 ];
@@ -107,6 +118,16 @@ async function montar() {
       logsRepo: { listar: async () => [] },
     },
     vinculo,
+    recarga: {
+      repo: {
+        criarCobranca: async () => { throw new Error("não usado"); },
+        contarPendentes: async () => 0,
+        buscarDoUsuario: async () => null,
+        buscarPorId: async () => null,
+        aplicarEvento: async () => "DESCONHECIDA",
+      },
+      gateway: criarGatewaySimulado("segredo"),
+    },
     carteiraRepo: { buscarSaldo: async () => ({ saldoCentavos: 0, atualizadoEm: new Date() }) },
     cadastrosRepo: { listarPendentes: async () => [], decidir: async () => "NAO_ENCONTRADO" },
     identificar,
