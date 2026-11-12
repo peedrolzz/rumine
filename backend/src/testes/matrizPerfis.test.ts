@@ -4,6 +4,7 @@ import type { Identificador } from "../shared/auth.js";
 import type { PerfilUsuario } from "../../generated/prisma/enums.js";
 import type { CardapioRepositorio } from "../modules/cardapio/repositorio.js";
 import type { HistoricoRepositorio } from "../modules/historico/repositorio.js";
+import type { VinculoRepositorio } from "../modules/vinculo/repositorio.js";
 import { criarRepoIdentidadeFalso } from "./identidadeFalsa.js";
 
 // Matriz de acesso (HU-03): cada rota existente × cada perfil (e sem login).
@@ -29,6 +30,14 @@ const ROTAS: Rota[] = [
   { metodo: "GET", url: "/historico", padrao: "/historico", permitidos: TODOS },
   { metodo: "POST", url: "/mestre/contas", padrao: "/mestre/contas", permitidos: ["MESTRE"], corpo: {} },
   { metodo: "GET", url: "/mestre/logs", padrao: "/mestre/logs", permitidos: ["MESTRE"] },
+  { metodo: "GET", url: "/vinculo", padrao: "/vinculo", permitidos: ["USUARIO"] },
+  { metodo: "POST", url: "/vinculo", padrao: "/vinculo", permitidos: ["USUARIO"] },
+  {
+    metodo: "GET",
+    url: "/admin/declaracoes/00000000-0000-4000-8000-000000000009/arquivo",
+    padrao: "/admin/declaracoes/:id/arquivo",
+    permitidos: ["ADMIN"],
+  },
 ];
 
 // Rotas públicas ou que se protegem sozinhas (sessão), fora da matriz de perfis.
@@ -58,6 +67,16 @@ const historicoRepo: HistoricoRepositorio = {
   },
 };
 
+const vinculo = {
+  repo: {
+    buscar: async () => ({ status: "ATIVO" as const, identificador: null, declaracaoEnviadaEm: null, motivoRejeicao: null }),
+    registrarEnvio: async () => "OK",
+    buscarDeclaracao: async () => null,
+    registrarVisualizacao: async () => undefined,
+  } satisfies VinculoRepositorio,
+  armazenamento: { salvar: async () => undefined, ler: async () => null, remover: async () => undefined },
+};
+
 const identificar: Identificador = (request) => {
   const perfil = request.headers["x-perfil"];
   if (typeof perfil === "string") request.usuario = { id: "00000000-0000-4000-8000-000000000001", perfil: perfil as PerfilUsuario };
@@ -72,6 +91,7 @@ async function montar() {
       contasRepo: { criarConta: async () => "EMAIL_JA_CADASTRADO", existeMestreComLogin: async () => true },
       logsRepo: { listar: async () => [] },
     },
+    vinculo,
     identificar,
     hoje: () => "2026-11-10",
   });
