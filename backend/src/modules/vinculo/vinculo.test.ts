@@ -7,6 +7,7 @@ import type { Identificador } from "../../shared/auth.js";
 import { criarArmazenamentoEmDisco, type Armazenamento } from "../../shared/armazenamento.js";
 import type { CardapioRepositorio } from "../cardapio/repositorio.js";
 import { LIMITE_BYTES, detectarTipo } from "./arquivo.js";
+import { criarServicoVinculo } from "./servico.js";
 import type { DeclaracaoArquivo, ResultadoEnvio, Vinculo, VinculoRepositorio } from "./repositorio.js";
 
 // ---------- apoio ----------
@@ -158,8 +159,54 @@ describe("detectarTipo", () => {
     ["PNG cortado", Buffer.from([0x89, 0x50, 0x4e])],
     ["vazio", Buffer.alloc(0)],
     ["PDF que não está no início", Buffer.concat([Buffer.from("lixo"), PDF])],
+    ["JPG com só dois bytes de assinatura", Buffer.from([0xff, 0xd8, 0x00, 0x01])],
   ])("recusa %s", (_n, conteudo) => {
     expect(detectarTipo(conteudo)).toBeNull();
+  });
+});
+
+// ---------- serviço (camada própria, sem HTTP) ----------
+describe("serviço de vínculo", () => {
+  const servicoComBanco = () => {
+    const banco = criarBanco({ [EU]: { ...SEM_VINCULO } });
+    const memoria = criarArmazenamentoMemoria();
+    return { banco, memoria, servico: criarServicoVinculo(banco.repo, memoria.armazenamento) };
+  };
+
+  it("recusa arquivo acima do limite sem gravar nada (defesa além do limite do upload)", async () => {
+    const { servico, memoria, banco } = servicoComBanco();
+    const grande = Buffer.concat([PDF, Buffer.alloc(LIMITE_BYTES)]);
+    expect(await servico.enviar({ usuarioId: EU, identificador: "a2345678", arquivo: grande })).toBe("ARQUIVO_GRANDE");
+    expect(memoria.arquivos.size + memoria.removidos.length).toBe(0);
+    expect(banco.declaracoes).toHaveLength(0);
+  });
+
+  it("recusa conteúdo desconhecido e arquivo vazio sem gravar nada", async () => {
+    const { servico, memoria } = servicoComBanco();
+    expect(await servico.enviar({ usuarioId: EU, identificador: "a2345678", arquivo: Buffer.from("texto") })).toBe("FORMATO_INVALIDO");
+    expect(await servico.enviar({ usuarioId: EU, identificador: "a2345678", arquivo: Buffer.alloc(0) })).toBe("ARQUIVO_VAZIO");
+    expect(memoria.arquivos.size + memoria.removidos.length).toBe(0);
+  });
+
+  it("se o banco falhar, apaga o arquivo gravado e repassa o erro", async () => {
+    const { servico, memoria, banco } = servicoComBanco();
+    banco.repo.registrarEnvio = async () => {
+      throw new Error("banco fora do ar");
+    };
+    await expect(servico.enviar({ usuarioId: EU, identificador: "a2345678", arquivo: PDF })).rejects.toThrow("banco fora do ar");
+    expect(memoria.arquivos.size).toBe(0);
+    expect(memoria.removidos).toHaveLength(1);
+  });
+
+  it("se apagar também falhar, o erro original do banco é o que aparece", async () => {
+    const { servico, memoria, banco } = servicoComBanco();
+    banco.repo.registrarEnvio = async () => {
+      throw new Error("banco fora do ar");
+    };
+    memoria.armazenamento.remover = async () => {
+      throw new Error("disco cheio");
+    };
+    await expect(servico.enviar({ usuarioId: EU, identificador: "a2345678", arquivo: PDF })).rejects.toThrow("banco fora do ar");
   });
 });
 

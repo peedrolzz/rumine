@@ -22,7 +22,7 @@ Carteira digital com QR Code para o Restaurante Universitário da UTFPR (câmpus
 - Saldo nunca negativo (CHECK no banco). Débito atômico: `$transaction` + `SELECT ... FOR UPDATE` via `$queryRaw`.
 - QR Code: JWT assinado, 30 s, `jti` único (uso único). Nunca expor o RA no QR.
 - Senha com Argon2 (mínimo 8 caracteres, número e caractere especial). Sessão em cookie HttpOnly.
-- Cadastro exige comprovação de vínculo (upload de até 2 MB: pdf, jpg ou png) e aprovação do Admin.
+- Cadastro exige comprovação de vínculo (upload de até 5 MB: pdf, jpg ou png) e aprovação do Admin.
 - Integrações externas (pagamento, e-mail, arquivos, UTFPR) ficam atrás de interfaces, com versão simulada.
 
 ## UX

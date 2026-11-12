@@ -86,6 +86,16 @@ Cada perfil vê só o que usa: **Usuário** (carteira, histórico, cardápio), *
 - **Rota nova protegida por perfil:** use `exigirPerfil(...)` no backend e acrescente uma linha em `backend/src/testes/matrizPerfis.test.ts` (um teste quebra se a rota não estiver na matriz). No front, a tela entra dentro de um `<RotaPorPerfil perfis={[...]}>` em `App.tsx` e o item do menu em `layout/LayoutApp.tsx`.
 - **Ação sensível nova** (ex.: aprovar cadastro): grave o log com `registrarLog(tx, {...})` (`modules/auditoria/registro.ts`) na mesma transação da ação. Nunca coloque senha, hash ou token nos detalhes.
 
+### Comprovação de vínculo e arquivos enviados (HU-02)
+
+Depois de confirmar o e-mail, a pessoa informa o **RA** e envia a **declaração de matrícula** (PDF, JPG ou PNG, até **5 MB**) na tela "Comprove seu vínculo". O cadastro vai para análise do Admin; se for rejeitado, a tela mostra o motivo e permite reenviar. Quem já foi aprovado não envia de novo.
+
+- **Onde o arquivo fica:** em desenvolvimento, na pasta `backend/armazenamento-privado/` (ignorada pelo Git; muda com `ARMAZENAMENTO_DIR`). O nome é uma chave aleatória, nunca o nome original. O serviço de produção (volume ou bucket) entra no deploy, atrás da interface `shared/armazenamento.ts`.
+- **O arquivo só sai por uma rota de Admin:** `GET /admin/declaracoes/:id/arquivo` (a HU-20 usa), e cada abertura vai para o log de auditoria.
+- **O tipo vem do conteúdo**, não da extensão: um `.exe` renomeado para `.pdf` é recusado pelo servidor.
+- **Testar sem a tela do Admin (HU-20):** para simular a decisão, mude o status direto no banco, por exemplo `update usuario set status='ATIVO' where email='...'` (aprovar) ou `status='REJEITADO'` (e, para ver o motivo, insira uma linha em `analise_cadastro` com `decisao='REJEITADO'`).
+- **Arquivo novo em outras histórias:** use sempre a interface `Armazenamento` e valide o tipo pelo conteúdo (`modules/vinculo/arquivo.ts`).
+
 ## 5. Fluxo de trabalho por história
 
 Cada história (HU) é um *issue* no quadro do GitHub Projects. O fluxo é sempre o mesmo:
