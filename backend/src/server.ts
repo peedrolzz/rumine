@@ -8,9 +8,15 @@ import { criarArmazenamentoEmDisco } from "./shared/armazenamento.js";
 import { criarRepositorioVinculoPrisma } from "./modules/vinculo/repositorio.js";
 import { criarRepositorioCadastrosPrisma } from "./modules/cadastros/repositorio.js";
 import { criarRepositorioCarteiraPrisma } from "./modules/carteira/repositorio.js";
+import { criarGatewaySimulado } from "./modules/recarga/gateway.js";
+import { criarRepositorioRecargaPrisma } from "./modules/recarga/repositorio.js";
 import { criarRepositorioPrisma } from "./modules/cardapio/repositorio.js";
 import { criarRepositorioHistoricoPrisma } from "./modules/historico/repositorio.js";
 import { criarRepositorioIdentidadePrisma } from "./modules/identidade/repositorio.js";
+
+// Provedor de pagamento: por enquanto só o simulado (o adaptador do Mercado Pago entra no mesmo contrato).
+const segredoWebhook = process.env.PAGAMENTO_WEBHOOK_SEGREDO ?? (process.env.NODE_ENV === "production" ? undefined : "segredo-de-desenvolvimento");
+if (!segredoWebhook) throw new Error("Defina PAGAMENTO_WEBHOOK_SEGREDO para rodar em produção.");
 
 const identificar = identificadorDev();
 const app = await buildApp({
@@ -24,6 +30,7 @@ const app = await buildApp({
   },
   cadastrosRepo: criarRepositorioCadastrosPrisma(prisma),
   carteiraRepo: criarRepositorioCarteiraPrisma(prisma),
+  recarga: { repo: criarRepositorioRecargaPrisma(prisma), gateway: criarGatewaySimulado(segredoWebhook) },
   identificar,
   logger: true,
 });

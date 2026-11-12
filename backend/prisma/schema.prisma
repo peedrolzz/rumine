@@ -191,10 +191,15 @@ model CobrancaRecarga {
   transacaoId   String?        @unique @map("transacao_id") @db.Uuid
   criadaEm      DateTime       @default(now()) @map("criada_em")
   confirmadaEm  DateTime?      @map("confirmada_em")
+  /// Motivo da recusa ou expiração, mostrado ao usuário (RN-04).
+  motivoFalha     String? @map("motivo_falha")
+  /// Código Pix "copia e cola", para reabrir a tela de pagamento.
+  codigoPagamento String? @map("codigo_pagamento")
 
   usuario   Usuario    @relation(fields: [usuarioId], references: [id])
   transacao Transacao? @relation(fields: [transacaoId], references: [id])
 
+  @@index([usuarioId, criadaEm])
   @@map("cobranca_recarga")
 }
 
