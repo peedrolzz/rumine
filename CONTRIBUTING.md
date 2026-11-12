@@ -105,7 +105,7 @@ O Admin analisa a fila em **Cadastros** (`GET /admin/cadastros`): vê nome, e-ma
 
 ### Saldo da carteira (HU-04)
 
-`GET /carteira` devolve o saldo do próprio usuário em **centavos** (`saldoCentavos`) e `atualizadoEm`; só o perfil Usuário com cadastro aprovado (usa `exigirCadastroAtivo()`). A tela Início mostra `R$ 1.234,50`, o atalho **Recarregar** e busca o saldo de novo ao voltar para o app. O banco tem `CHECK (saldo_centavos >= 0)` (migração `carteira_saldo_nao_negativo`): quem alterar o saldo (recarga, débito) deve fazê-lo em `$transaction` com `SELECT ... FOR UPDATE`, e o banco recusa qualquer resultado negativo. **Ao atualizar a `main`, rode `npx prisma migrate dev` em `backend/`** para aplicar a migração.
+`GET /carteira` devolve o saldo do próprio usuário em **centavos** (`saldoCentavos`) e `atualizadoEm`; só o perfil Usuário com cadastro aprovado (usa `exigirCadastroAtivo()`). A tela Início mostra `R$ 1.234,50`, o atalho **Recarregar** e busca o saldo de novo ao voltar para o app. O banco já tem `CHECK (saldo_centavos >= 0)` (desde a migração `init`): quem alterar o saldo (recarga, débito) deve fazê-lo em `$transaction` com `SELECT ... FOR UPDATE`, e o banco recusa qualquer resultado negativo.
 
 ## 5. Fluxo de trabalho por história
 
