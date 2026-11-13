@@ -117,20 +117,20 @@ O script é idempotente (rodar de novo não duplica nem altera nada) e **só rod
 A publicação usa **um único app** (a API também serve o app compilado, na mesma origem: o cookie de sessão funciona sem CORS) e um **banco Postgres grátis no Neon**. Arquivos: `Dockerfile`, `docker-entrypoint.sh` e `fly.toml`.
 
 1. **Banco (Neon):** crie um projeto Postgres 16 em https://neon.tech e copie a connection string **direta** (sem `-pooler` no host), com `sslmode=require`. Se aparecer `channel_binding=require`, apague esse trecho. O plano grátis suspende o banco após alguns minutos parado: o primeiro acesso depois disso demora cerca de 1 segundo a mais.
-2. **App e volume** (uma vez; troque `rumine-utfpr` pelo seu nome, e o mesmo nome em `app` e `FRONTEND_ORIGIN` do `fly.toml`):
+2. **App e volume** (uma vez; troque `rumine-bruxos` pelo seu nome, e o mesmo nome em `app` e `FRONTEND_ORIGIN` do `fly.toml`):
    ```powershell
-   fly apps create rumine-utfpr
-   fly volumes create rumine_dados --region gru --size 1 --app rumine-utfpr
+   fly apps create rumine-bruxos
+   fly volumes create rumine_dados --region gru --size 1 --app rumine-bruxos
    ```
 3. **Segredos** (nunca vão para o Git). Gere os dois segredos aleatórios e informe a connection string do Neon:
    ```powershell
    function novoSegredo { $b = New-Object byte[] 48; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b) }
-   fly secrets set --app rumine-utfpr "DATABASE_URL=<connection string do Neon>" "PAGAMENTO_WEBHOOK_SEGREDO=$(novoSegredo)" "QR_SEGREDO=$(novoSegredo)"
+   fly secrets set --app rumine-bruxos "DATABASE_URL=<connection string do Neon>" "PAGAMENTO_WEBHOOK_SEGREDO=$(novoSegredo)" "QR_SEGREDO=$(novoSegredo)"
    ```
 4. **Publicar:** `fly deploy` (na raiz). O deploy aplica as migrações sozinho (`release_command`).
 5. **Contas de demonstração** (uma vez; cria também o câmpus e o preço da refeição, sem os quais nada funciona):
    ```powershell
-   fly ssh console --app rumine-utfpr -C "runuser -u node -- npm run criar-demo"
+   fly ssh console --app rumine-bruxos -C "runuser -u node -- npm run criar-demo"
    ```
    As contas e a senha estão em "Demonstração para avaliação".
 6. **Conferir:** abra `https://<app>.fly.dev`, entre com a conta do aluno e abra **Mostrar QR Code**. Logs: `fly logs`.
