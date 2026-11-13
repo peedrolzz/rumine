@@ -14,6 +14,7 @@ import ConfirmarEmail from "./paginas/publico/ConfirmarEmail";
 import Entrar from "./paginas/publico/Entrar";
 import Cardapio from "./paginas/usuario/Cardapio";
 import Inicio from "./paginas/usuario/Inicio";
+import QrCode from "./paginas/usuario/QrCode";
 import Recarga from "./paginas/usuario/Recarga";
 import Historico from "./paginas/usuario/Historico";
 import Perfil from "./paginas/usuario/Perfil";
@@ -41,6 +42,7 @@ export default function App() {
           <Route path="/perfil" element={<Perfil />} />
 
           <Route element={<RotaPorPerfil perfis={["USUARIO"]} />}>
+            <Route path="/qr" element={<QrCode />} />
             <Route path="/recarga" element={<Recarga />} />
             <Route path="/historico" element={<Historico />} />
             <Route path="/cardapio" element={<Cardapio />} />

@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Box, Button, CircularProgress, Paper, Stack, Typography } from "@mui/material";
 import AddCircleOutlinedIcon from "@mui/icons-material/AddCircleOutlined";
+import QrCode2Icon from "@mui/icons-material/QrCode2";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { Link } from "react-router-dom";
 import { ErroApi, requisitar } from "../../api/cliente";
@@ -115,7 +116,10 @@ export default function Inicio() {
           )}
           {erroAtualizar && <Alert severity="warning">Não foi possível atualizar o saldo: {erroAtualizar}</Alert>}
 
-          <Button component={Link} to="/recarga" variant="contained" size="large" fullWidth startIcon={<AddCircleOutlinedIcon />}>
+          <Button component={Link} to="/qr" variant="contained" size="large" fullWidth startIcon={<QrCode2Icon />}>
+            Mostrar QR Code
+          </Button>
+          <Button component={Link} to="/recarga" variant="outlined" size="large" fullWidth startIcon={<AddCircleOutlinedIcon />}>
             Recarregar
           </Button>
           <Button variant="text" size="large" fullWidth startIcon={<RefreshIcon />} onClick={() => void atualizar()} disabled={atualizando}>
