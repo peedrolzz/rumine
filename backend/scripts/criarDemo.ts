@@ -10,6 +10,7 @@ import { criarArmazenamentoEmDisco } from "../src/shared/armazenamento.js";
 import { hojeNoBrasil } from "../src/shared/data.js";
 import { hasherArgon2 } from "../src/modules/identidade/senha.js";
 import { primeiraRegraQuebrada } from "../src/modules/identidade/esquemas.js";
+import { garantirArquivoDeclaracao } from "../src/modules/demo/reparo.js";
 import {
   CARDAPIO_DEMO,
   CONTAS_DEMO,
@@ -56,6 +57,17 @@ situacao.push("preço da refeição (estudante): R$ 3,50");
     if (existente) {
       ids.set(conta.chave, existente.id);
       situacao.push(`${conta.email}: já existia`);
+      if (conta.chave === "alunoPendente") {
+        // App recriado com volume novo: o banco lembra da declaração, mas o arquivo sumiu. Recoloca.
+        const declaracao = await prisma.declaracao.findFirst({
+          where: { usuarioId: existente.id, usuario: { status: "PENDENTE_APROVACAO" } },
+          orderBy: { enviadaEm: "desc" },
+          select: { arquivoChave: true },
+        });
+        if (declaracao && (await garantirArquivoDeclaracao(armazenamento, declaracao.arquivoChave, DECLARACAO_DEMO))) {
+          situacao.push("declaração do aluno em análise: arquivo recolocado");
+        }
+      }
       continue;
     }
     const criada = await prisma.usuario.create({
