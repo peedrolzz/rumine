@@ -57,6 +57,7 @@ const ROTAS: Rota[] = [
     corpo: {},
   },
   { metodo: "POST", url: "/qr", padrao: "/qr", permitidos: ["USUARIO"] },
+  { metodo: "POST", url: "/leituras", padrao: "/leituras", permitidos: ["OPERADOR"], corpo: {} },
   { metodo: "GET", url: "/vinculo", padrao: "/vinculo", permitidos: ["USUARIO"] },
   { metodo: "POST", url: "/vinculo", padrao: "/vinculo", permitidos: ["USUARIO"] },
   {
@@ -131,6 +132,7 @@ async function montar() {
       gateway: criarGatewaySimulado("segredo"),
     },
     qr: criarServicoQr({ segredo: "segredo-de-teste-com-mais-de-32-caracteres!" }),
+    leituraRepo: { registrarNegada: async () => undefined, processar: async () => ({ resultado: "NEGADO_TOKEN_INVALIDO" }) },
     carteiraRepo: { buscarSaldo: async () => ({ saldoCentavos: 0, atualizadoEm: new Date() }) },
     cadastrosRepo: { listarPendentes: async () => [], decidir: async () => "NAO_ENCONTRADO" },
     identificar,

@@ -7,6 +7,7 @@ import LayoutApp from "./layout/LayoutApp";
 import LayoutPublico from "./layout/LayoutPublico";
 import CadastrarCardapio from "./paginas/admin/CadastrarCardapio";
 import Cadastros from "./paginas/admin/Cadastros";
+import Leitura from "./paginas/operador/Leitura";
 import Logs from "./paginas/mestre/Logs";
 import NovaConta from "./paginas/mestre/NovaConta";
 import Cadastro from "./paginas/publico/Cadastro";
@@ -49,10 +50,7 @@ export default function App() {
           </Route>
 
           <Route element={<RotaPorPerfil perfis={["OPERADOR"]} />}>
-            <Route
-              path="/operador/leitura"
-              element={<EmBreve titulo="Ler QR Code" descricao="A leitura do QR Code do aluno chega com a HU-07." />}
-            />
+            <Route path="/operador/leitura" element={<Leitura />} />
           </Route>
 
           <Route element={<RotaPorPerfil perfis={["ADMIN"]} />}>

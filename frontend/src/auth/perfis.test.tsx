@@ -6,6 +6,9 @@ import { criarBackendFalso, SENHA, USUARIO_ATIVO, type BackendFalso } from "../t
 import { renderApp } from "../testes/renderApp";
 import type { Perfil } from "./perfis";
 
+// A câmera não existe no jsdom: o leitor de QR vira um espaço vazio nestes testes de navegação.
+vi.mock("@yudiel/react-qr-scanner", () => ({ Scanner: () => null }));
+
 let backend: BackendFalso;
 
 const comoPerfil = (perfil: Perfil) => {

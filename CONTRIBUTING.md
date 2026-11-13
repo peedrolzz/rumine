@@ -135,6 +135,8 @@ O Usuário com cadastro aprovado abre **Início → Mostrar QR Code** (`/qr`) e 
 - **Uso único:** o `jti` é marcado como usado na leitura, pela restrição única de `leitura_acesso.token_jti` (HU-07/HU-08). Esta história só emite o token.
 - **Segredo:** `QR_SEGREDO` (mínimo 32 caracteres). Em produção é **obrigatório** (o servidor não sobe sem ele); em desenvolvimento há um padrão. Trocar o segredo invalida os QR em circulação.
 - **Tela:** o QR é gerado no navegador (`qrcode.react`), mostra a contagem regressiva, **renova sozinho 5 s antes de vencer** (e ao voltar para a aba), mantém a tela acesa quando o navegador permite e nunca deixa um QR vencido visível.
+- **Leitura e débito (HU-07/08):** o Operador lê o QR em `/operador/leitura` (câmera, ou colando o código) e o app chama `POST /leituras` (só Operador). Tudo acontece numa `$transaction` em `modules/acesso/leitura.ts`: confere assinatura e validade, o **uso único do `jti`** (restrição única de `leitura_acesso.token_jti` + checagem sob trava), cadastro ativo, preço e saldo; trava a carteira com `SELECT ... FOR UPDATE`, debita, grava `Transacao` (`DEBITO_REFEICAO`), `LeituraAcesso` e `Consumo`. Aluno PAE é liberado sem débito (consumo de R$ 0,00 sem transação). Leitura negada é resposta normal (200 com `liberado: false` e o motivo); a resposta traz só o nome do aluno, nunca o RA nem o saldo.
+- **Preço da refeição:** vem de `preco_refeicao` (câmpus + categoria, o mais recente com `vigenteDesde` até hoje). O `npm run seed` e o `npm run criar-demo` criam o do estudante (R$ 3,50). Sem preço a API responde 409 "preço não configurado" e **não consome** o código.
 
 ## 5. Fluxo de trabalho por história
 
