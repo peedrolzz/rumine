@@ -1,6 +1,6 @@
 # Fly.io: um único app (API + frontend na mesma origem). Veja o README, "Publicar no Fly.io".
 # Troque `app` pelo nome que você criou (e o mesmo nome em FRONTEND_ORIGIN).
-app = "rumine-utfpr"
+app = "rumine-bruxos"
 primary_region = "gru" # São Paulo
 
 [build]
@@ -8,7 +8,7 @@ primary_region = "gru" # São Paulo
 [env]
   NODE_ENV = "production"
   PORT = "8080"
-  FRONTEND_ORIGIN = "https://rumine-utfpr.fly.dev"
+  FRONTEND_ORIGIN = "https://rumine-bruxos.fly.dev"
   ARMAZENAMENTO_DIR = "/data/declaracoes"
   # Ambiente de DEMONSTRAÇÃO: liga o "simular pagamento" e permite o npm run criar-demo.
   # Remova esta linha se um dia houver dinheiro real.
