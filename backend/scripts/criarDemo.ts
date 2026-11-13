@@ -40,6 +40,15 @@ async function principal() {
   const campus = await prisma.campus.upsert({ where: { nome: "Dois Vizinhos" }, create: { nome: "Dois Vizinhos" }, update: {} });
   const situacao: string[] = [];
 
+// Preço da refeição do estudante: sem ele a leitura do QR responde "preço não configurado".
+const temPreco = await prisma.precoRefeicao.findFirst({ where: { campusId: campus.id, categoriaPreco: "ESTUDANTE" } });
+if (!temPreco) {
+  await prisma.precoRefeicao.create({
+    data: { campusId: campus.id, categoriaPreco: "ESTUDANTE", valorCentavos: 350, vigenteDesde: new Date("2026-01-01T00:00:00.000Z") },
+  });
+}
+situacao.push("preço da refeição (estudante): R$ 3,50");
+
   // Contas: cria só as que faltam (nunca mexe em senha ou dados de uma conta existente).
   const ids = new Map<ContaDemo["chave"], string>();
   for (const conta of CONTAS_DEMO) {

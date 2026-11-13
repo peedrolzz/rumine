@@ -25,6 +25,7 @@ import type { RecargaRepositorio } from "./modules/recarga/repositorio.js";
 import { rotasRecarga, rotasWebhookPagamento } from "./modules/recarga/rotas.js";
 import { criarServicoRecarga } from "./modules/recarga/servico.js";
 import type { ServicoQr } from "./modules/acesso/qrToken.js";
+import { criarServicoLeitura, type LeituraRepositorio } from "./modules/acesso/leitura.js";
 import { rotasAcesso } from "./modules/acesso/rotas.js";
 import { rotasHistorico } from "./modules/historico/rotas.js";
 import { criarServicoHistorico } from "./modules/historico/servico.js";
@@ -77,6 +78,8 @@ export type Dependencias = {
   recarga?: ConfigRecarga | undefined;
   /** QR Code de acesso (HU-06). */
   qr?: ServicoQr | undefined;
+  /** Leitura do QR e débito (HU-07/08). Precisa do `qr` para validar o código. */
+  leituraRepo?: LeituraRepositorio | undefined;
   /**
    * Identificador explícito (DEV_USUARIO ou os testes). Roda depois do cookie de sessão
    * e, se definir o usuário, tem precedência sobre ele.
@@ -100,6 +103,7 @@ export async function buildApp({
   carteiraRepo,
   recarga,
   qr,
+  leituraRepo,
   identificar,
   origemFrontend = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173",
   hoje = hojeNoBrasil,
@@ -170,7 +174,10 @@ export async function buildApp({
     await app.register(rotasRecarga(servico, { simulacao: recarga.simulacao ?? !producao }));
     await app.register(rotasWebhookPagamento(servico, recarga.gateway));
   }
-  if (qr) await app.register(rotasAcesso(qr));
+  if (qr) {
+    const leitura = leituraRepo && criarServicoLeitura({ qr, repo: leituraRepo, hoje });
+    await app.register(rotasAcesso(qr, leitura));
+  }
   if (mestre) {
     const contas = criarServicoContas(mestre.contasRepo, mestre.hasher ?? hasherArgon2);
     await app.register(rotasMestre(contas, criarServicoLogs(mestre.logsRepo)));

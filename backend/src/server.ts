@@ -11,6 +11,7 @@ import { criarRepositorioCarteiraPrisma } from "./modules/carteira/repositorio.j
 import { simulacaoDemoEmProducao, simulacaoHabilitada } from "./modules/recarga/config.js";
 import { criarGatewaySimulado } from "./modules/recarga/gateway.js";
 import { criarRepositorioRecargaPrisma } from "./modules/recarga/repositorio.js";
+import { criarRepositorioLeituraPrisma } from "./modules/acesso/leitura.js";
 import { criarServicoQr } from "./modules/acesso/qrToken.js";
 import { criarRepositorioPrisma } from "./modules/cardapio/repositorio.js";
 import { criarRepositorioHistoricoPrisma } from "./modules/historico/repositorio.js";
@@ -43,6 +44,7 @@ const app = await buildApp({
     simulacao: simulacaoHabilitada(process.env),
   },
   qr: criarServicoQr({ segredo: segredoQr }),
+  leituraRepo: criarRepositorioLeituraPrisma(prisma),
   identificar,
   logger: true,
 });

@@ -3,11 +3,18 @@ import { prisma } from "../src/shared/prisma.js";
 import { USUARIOS_DEV } from "../src/shared/usuariosDev.js";
 import type { PerfilUsuario } from "../generated/prisma/enums.js";
 
-await prisma.campus.upsert({
+const campusSeed = await prisma.campus.upsert({
   where: { nome: "Dois Vizinhos" },
   create: { nome: "Dois Vizinhos" },
   update: {},
 });
+// Preço da refeição do estudante (HU-08): sem ele a leitura do QR responde "preço não configurado".
+const temPreco = await prisma.precoRefeicao.findFirst({ where: { campusId: campusSeed.id, categoriaPreco: "ESTUDANTE" } });
+if (!temPreco) {
+  await prisma.precoRefeicao.create({
+    data: { campusId: campusSeed.id, categoriaPreco: "ESTUDANTE", valorCentavos: 350, vigenteDesde: new Date("2026-01-01T00:00:00.000Z") },
+  });
+}
 
 const NOMES_DEV: Record<PerfilUsuario, string> = {
   ADMIN: "Admin Dev",
