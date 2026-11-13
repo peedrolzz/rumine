@@ -37,7 +37,9 @@ export default function QrCode() {
     try {
       const emitido = await requisitar<QrEmitido>("/qr", { metodo: "POST" });
       if (!montado.current) return;
-      const novo = { token: emitido.token, venceEm: Date.now() + emitido.validadeSegundos * 1000 };
+      const agoraLocal = Date.now();
+      const novo = { token: emitido.token, venceEm: agoraLocal + emitido.validadeSegundos * 1000 };
+      setAgora(agoraLocal); // o relógio da tela acompanha o QR novo (sem mostrar 31 s)
       qrRef.current = novo;
       setQr(novo);
       setErro(null);
