@@ -11,6 +11,7 @@ import { criarRepositorioCarteiraPrisma } from "./modules/carteira/repositorio.j
 import { simulacaoDemoEmProducao, simulacaoHabilitada } from "./modules/recarga/config.js";
 import { criarGatewaySimulado } from "./modules/recarga/gateway.js";
 import { criarRepositorioRecargaPrisma } from "./modules/recarga/repositorio.js";
+import { criarServicoQr } from "./modules/acesso/qrToken.js";
 import { criarRepositorioPrisma } from "./modules/cardapio/repositorio.js";
 import { criarRepositorioHistoricoPrisma } from "./modules/historico/repositorio.js";
 import { criarRepositorioIdentidadePrisma } from "./modules/identidade/repositorio.js";
@@ -18,6 +19,10 @@ import { criarRepositorioIdentidadePrisma } from "./modules/identidade/repositor
 // Provedor de pagamento: no MVP só o simulado (provedor real fica fora do MVP; entraria no mesmo contrato).
 const segredoWebhook = process.env.PAGAMENTO_WEBHOOK_SEGREDO ?? (process.env.NODE_ENV === "production" ? undefined : "segredo-de-desenvolvimento");
 if (!segredoWebhook) throw new Error("Defina PAGAMENTO_WEBHOOK_SEGREDO para rodar em produção.");
+
+// Segredo que assina o QR Code (HU-06): obrigatório em produção; em desenvolvimento há um padrão.
+const segredoQr = process.env.QR_SEGREDO ?? (process.env.NODE_ENV === "production" ? undefined : "segredo-do-qr-so-para-desenvolvimento");
+if (!segredoQr) throw new Error("Defina QR_SEGREDO (mínimo 32 caracteres) para rodar em produção.");
 
 const identificar = identificadorDev();
 const app = await buildApp({
@@ -37,6 +42,7 @@ const app = await buildApp({
     // Fora de produção sempre; em produção só com PAGAMENTO_SIMULACAO_DEMO=true (ambiente de demonstração).
     simulacao: simulacaoHabilitada(process.env),
   },
+  qr: criarServicoQr({ segredo: segredoQr }),
   identificar,
   logger: true,
 });

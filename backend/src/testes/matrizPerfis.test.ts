@@ -1,3 +1,4 @@
+import { criarServicoQr } from "../modules/acesso/qrToken.js";
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../app.js";
 import type { Identificador } from "../shared/auth.js";
@@ -55,6 +56,7 @@ const ROTAS: Rota[] = [
     permitidos: ["USUARIO"],
     corpo: {},
   },
+  { metodo: "POST", url: "/qr", padrao: "/qr", permitidos: ["USUARIO"] },
   { metodo: "GET", url: "/vinculo", padrao: "/vinculo", permitidos: ["USUARIO"] },
   { metodo: "POST", url: "/vinculo", padrao: "/vinculo", permitidos: ["USUARIO"] },
   {
@@ -128,6 +130,7 @@ async function montar() {
       },
       gateway: criarGatewaySimulado("segredo"),
     },
+    qr: criarServicoQr({ segredo: "segredo-de-teste-com-mais-de-32-caracteres!" }),
     carteiraRepo: { buscarSaldo: async () => ({ saldoCentavos: 0, atualizadoEm: new Date() }) },
     cadastrosRepo: { listarPendentes: async () => [], decidir: async () => "NAO_ENCONTRADO" },
     identificar,
