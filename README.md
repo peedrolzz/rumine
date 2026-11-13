@@ -112,6 +112,31 @@ Para quem vai avaliar o sistema (local ou publicado), `npm run criar-demo` em `b
 
 O script é idempotente (rodar de novo não duplica nem altera nada) e **só roda fora de produção ou com `PAGAMENTO_SIMULACAO_DEMO=true`**, porque as senhas são conhecidas. Variáveis do ambiente publicado: `NODE_ENV=production`, `DATABASE_URL`, `FRONTEND_ORIGIN`, `PAGAMENTO_WEBHOOK_SEGREDO`, `QR_SEGREDO` (mín. 32 caracteres) e `PAGAMENTO_SIMULACAO_DEMO=true`. Rode o script no mesmo servidor da API (a declaração do aluno em análise vai para o armazenamento privado dele). Mais detalhes no [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Publicar no Fly.io
+
+A publicação usa **um único app** (a API também serve o app compilado, na mesma origem: o cookie de sessão funciona sem CORS) e um **banco Postgres grátis no Neon**. Arquivos: `Dockerfile`, `docker-entrypoint.sh` e `fly.toml`.
+
+1. **Banco (Neon):** crie um projeto Postgres 16 em https://neon.tech e copie a connection string **direta** (sem `-pooler` no host), com `sslmode=require`. Se aparecer `channel_binding=require`, apague esse trecho. O plano grátis suspende o banco após alguns minutos parado: o primeiro acesso depois disso demora cerca de 1 segundo a mais.
+2. **App e volume** (uma vez; troque `rumine-utfpr` pelo seu nome, e o mesmo nome em `app` e `FRONTEND_ORIGIN` do `fly.toml`):
+   ```powershell
+   fly apps create rumine-utfpr
+   fly volumes create rumine_dados --region gru --size 1 --app rumine-utfpr
+   ```
+3. **Segredos** (nunca vão para o Git). Gere os dois segredos aleatórios e informe a connection string do Neon:
+   ```powershell
+   function novoSegredo { $b = New-Object byte[] 48; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b) }
+   fly secrets set --app rumine-utfpr "DATABASE_URL=<connection string do Neon>" "PAGAMENTO_WEBHOOK_SEGREDO=$(novoSegredo)" "QR_SEGREDO=$(novoSegredo)"
+   ```
+4. **Publicar:** `fly deploy` (na raiz). O deploy aplica as migrações sozinho (`release_command`).
+5. **Contas de demonstração** (uma vez; cria também o câmpus e o preço da refeição, sem os quais nada funciona):
+   ```powershell
+   fly ssh console --app rumine-utfpr -C "runuser -u node -- npm run criar-demo"
+   ```
+   As contas e a senha estão em "Demonstração para avaliação".
+6. **Conferir:** abra `https://<app>.fly.dev`, entre com a conta do aluno e abra **Mostrar QR Code**. Logs: `fly logs`.
+
+Observações: `PAGAMENTO_SIMULACAO_DEMO=true` (no `fly.toml`) liga o pagamento simulado e é o que autoriza o `criar-demo` em produção; é só para demonstração. A câmera do Operador exige HTTPS, que o Fly já fornece. A máquina fica sempre ligada (o volume prende o app a uma só máquina e o limitador de login é em memória). Para testar a imagem localmente: `docker build -t rumine .`.
+
 ## Equipe
 
 | Integrante | Papel |

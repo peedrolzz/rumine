@@ -45,6 +45,8 @@ const app = await buildApp({
   },
   qr: criarServicoQr({ segredo: segredoQr }),
   leituraRepo: criarRepositorioLeituraPrisma(prisma),
+  // Na publicação a API serve o app compilado (mesma origem). Em desenvolvimento o Vite cuida do front.
+  frontendDist: process.env.FRONTEND_DIST,
   identificar,
   logger: true,
 });

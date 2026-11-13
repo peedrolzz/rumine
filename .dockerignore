@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+**/.env
+.git
+.github
+.claude
+documentos
+backend/generated
+backend/armazenamento-privado
+frontend/coverage
+**/*.log

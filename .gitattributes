@@ -1,0 +1,3 @@
+# O script de entrada roda em Linux: precisa terminar linhas com LF, mesmo em checkout no Windows.
+*.sh text eol=lf
+Dockerfile text eol=lf

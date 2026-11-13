@@ -2,6 +2,7 @@ import Fastify, { type FastifyError } from "fastify";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import type { Identificador } from "./shared/auth.js";
+import { registrarFrontend } from "./shared/frontendEstatico.js";
 import { exigirOrigemConfiavel } from "./shared/csrf.js";
 import { hojeNoBrasil } from "./shared/data.js";
 import { rotasCardapio } from "./modules/cardapio/rotas.js";
@@ -87,6 +88,8 @@ export type Dependencias = {
   identificar?: Identificador | undefined;
   /** Endereço do front: origem aceita no CORS e no CSRF, e base do link do e-mail. */
   origemFrontend?: string;
+  /** Pasta do frontend compilado: se informada, a API também serve o app (mesma origem). */
+  frontendDist?: string | undefined;
   /** Data de hoje (aaaa-mm-dd). Injetável para os testes. */
   hoje?: () => string;
   producao?: boolean;
@@ -105,6 +108,7 @@ export async function buildApp({
   qr,
   leituraRepo,
   identificar,
+  frontendDist,
   origemFrontend = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173",
   hoje = hojeNoBrasil,
   producao = process.env.NODE_ENV === "production",
@@ -150,6 +154,9 @@ export async function buildApp({
       await identificar(request);
     });
   }
+
+  // Antes das rotas: o fallback de SPA precisa enxergar o pedido primeiro.
+  if (frontendDist) await registrarFrontend(app, frontendDist);
 
   app.get("/health", async () => ({ status: "ok" }));
   if (servicoIdentidade) {

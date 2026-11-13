@@ -138,6 +138,15 @@ O Usuário com cadastro aprovado abre **Início → Mostrar QR Code** (`/qr`) e 
 - **Leitura e débito (HU-07/08):** o Operador lê o QR em `/operador/leitura` (câmera, ou colando o código) e o app chama `POST /leituras` (só Operador). Tudo acontece numa `$transaction` em `modules/acesso/leitura.ts`: confere assinatura e validade, o **uso único do `jti`** (restrição única de `leitura_acesso.token_jti` + checagem sob trava), cadastro ativo, preço e saldo; trava a carteira com `SELECT ... FOR UPDATE`, debita, grava `Transacao` (`DEBITO_REFEICAO`), `LeituraAcesso` e `Consumo`. Aluno PAE é liberado sem débito (consumo de R$ 0,00 sem transação). Leitura negada é resposta normal (200 com `liberado: false` e o motivo); a resposta traz só o nome do aluno, nunca o RA nem o saldo.
 - **Preço da refeição:** vem de `preco_refeicao` (câmpus + categoria, o mais recente com `vigenteDesde` até hoje). O `npm run seed` e o `npm run criar-demo` criam o do estudante (R$ 3,50). Sem preço a API responde 409 "preço não configurado" e **não consome** o código.
 
+### Publicação (Fly.io)
+
+O passo a passo está no [README](README.md#publicar-no-flyio). Resumo do que existe e por quê:
+
+- **App único:** a API serve o app compilado (`FRONTEND_DIST`, em `shared/frontendEstatico.ts`). O navegador navegando (`Accept: text/html`) recebe o `index.html`, então telas e rotas de mesmo caminho (`/historico`, `/qr`) convivem; as chamadas `fetch` seguem para a API. Em desenvolvimento nada muda: o Vite serve o front.
+- **Imagem:** `Dockerfile` em dois estágios; o backend roda com `tsx` (não há etapa de build). `docker-entrypoint.sh` prepara o volume `/data` e passa a rodar como usuário comum. `.gitattributes` mantém o `.sh` com final de linha LF.
+- **Migrações:** `release_command = "npx prisma migrate deploy"` no `fly.toml`. Migração nova entra no deploy sozinha.
+- **Variáveis de produção:** segredos `DATABASE_URL`, `PAGAMENTO_WEBHOOK_SEGREDO` e `QR_SEGREDO`; o resto fica no `fly.toml`. A CI confere que a imagem compila.
+
 ## 5. Fluxo de trabalho por história
 
 Cada história (HU) é um *issue* no quadro do GitHub Projects. O fluxo é sempre o mesmo:
