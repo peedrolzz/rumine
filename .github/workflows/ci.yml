@@ -57,3 +57,11 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+  docker:
+    name: Imagem Docker (build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Só confere que a imagem de publicação (Fly.io) continua compilando.
+      - run: docker build -t rumine .

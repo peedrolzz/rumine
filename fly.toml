@@ -1,0 +1,43 @@
+# Fly.io: um único app (API + frontend na mesma origem). Veja o README, "Publicar no Fly.io".
+# Troque `app` pelo nome que você criou (e o mesmo nome em FRONTEND_ORIGIN).
+app = "rumine-utfpr"
+primary_region = "gru" # São Paulo
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+  PORT = "8080"
+  FRONTEND_ORIGIN = "https://rumine-utfpr.fly.dev"
+  ARMAZENAMENTO_DIR = "/data/declaracoes"
+  # Ambiente de DEMONSTRAÇÃO: liga o "simular pagamento" e permite o npm run criar-demo.
+  # Remova esta linha se um dia houver dinheiro real.
+  PAGAMENTO_SIMULACAO_DEMO = "true"
+
+# Aplica as migrações do banco a cada deploy, antes de trocar a versão.
+[deploy]
+  release_command = "npx prisma migrate deploy"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Sempre ligada: o volume prende o app a uma máquina e o limitador de login fica em memória.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/health"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "30s"
+
+# Declarações de vínculo enviadas pelos alunos (nunca vão para o Git).
+[mounts]
+  source = "rumine_dados"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
