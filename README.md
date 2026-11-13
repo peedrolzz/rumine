@@ -98,6 +98,20 @@ npm install
 npm run dev                 # http://localhost:5173
 ```
 
+## Demonstração para avaliação
+
+Para quem vai avaliar o sistema (local ou publicado), `npm run criar-demo` em `backend/` cria contas prontas, com a senha `Demo@2026` (ou a de `DEMO_SENHA`):
+
+| Perfil | E-mail | O que mostra |
+| --- | --- | --- |
+| Usuário | `aluno.demo@alunos.utfpr.edu.br` | Cadastro aprovado, saldo de R$ 53,00 e histórico: QR Code, recarga, histórico e cardápio |
+| Usuário | `pendente.demo@alunos.utfpr.edu.br` | Cadastro em análise (declaração enviada): o Admin aprova ou rejeita |
+| Admin | `admin.demo@rumine.demo` | Cardápio e aprovação de cadastros |
+| Operador | `operador.demo@rumine.demo` | Leitura do QR Code |
+| Mestre | `mestre.demo@rumine.demo` | Criar contas e consultar os logs |
+
+O script é idempotente (rodar de novo não duplica nem altera nada) e **só roda fora de produção ou com `PAGAMENTO_SIMULACAO_DEMO=true`**, porque as senhas são conhecidas. Variáveis do ambiente publicado: `NODE_ENV=production`, `DATABASE_URL`, `FRONTEND_ORIGIN`, `PAGAMENTO_WEBHOOK_SEGREDO`, `QR_SEGREDO` (mín. 32 caracteres) e `PAGAMENTO_SIMULACAO_DEMO=true`. Rode o script no mesmo servidor da API (a declaração do aluno em análise vai para o armazenamento privado dele). Mais detalhes no [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Equipe
 
 | Integrante | Papel |

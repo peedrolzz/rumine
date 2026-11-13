@@ -86,6 +86,15 @@ Cada perfil vê só o que usa: **Usuário** (carteira, histórico, cardápio), *
 - **Rota nova protegida por perfil:** use `exigirPerfil(...)` no backend e acrescente uma linha em `backend/src/testes/matrizPerfis.test.ts` (um teste quebra se a rota não estiver na matriz). No front, a tela entra dentro de um `<RotaPorPerfil perfis={[...]}>` em `App.tsx` e o item do menu em `layout/LayoutApp.tsx`.
 - **Ação sensível nova** (ex.: aprovar cadastro): grave o log com `registrarLog(tx, {...})` (`modules/auditoria/registro.ts`) na mesma transação da ação. Nunca coloque senha, hash ou token nos detalhes.
 
+### Contas de demonstração
+
+`npm run criar-demo` (em `backend/`) cria um Mestre, um Admin, um Operador, um aluno **aprovado** (saldo R$ 53,00, com histórico) e um aluno **em análise** (com declaração enviada), mais o cardápio de hoje. A senha é `Demo@2026` (troque com `DEMO_SENHA`). Os e-mails estão no [README](README.md).
+
+- **Idempotente:** o que já existe não é recriado nem alterado (nem a senha). Para recomeçar a demonstração, apague as contas `*.demo@*` do banco.
+- **Trava de segurança:** as senhas são conhecidas, então o script **recusa** rodar em produção, a menos que `PAGAMENTO_SIMULACAO_DEMO=true` (o mesmo interruptor do ambiente de demonstração). Nunca rode contra dados reais.
+- **Mesmo servidor da API:** a declaração de exemplo vai para o armazenamento privado (`ARMAZENAMENTO_DIR`); rode o script onde a API roda para o Admin conseguir abri-la.
+- Os dados ficam em `backend/src/modules/demo/contas.ts` (com testes); o script é `backend/scripts/criarDemo.ts`.
+
 ### Comprovação de vínculo e arquivos enviados (HU-02)
 
 Depois de confirmar o e-mail, a pessoa informa o **RA** e envia a **declaração de matrícula** (PDF, JPG ou PNG, até **5 MB**) na tela "Comprove seu vínculo". O cadastro vai para análise do Admin; se for rejeitado, a tela mostra o motivo e permite reenviar. Quem já foi aprovado não envia de novo.
