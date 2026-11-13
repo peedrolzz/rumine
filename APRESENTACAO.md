@@ -3,7 +3,7 @@
 Este guia é só para o dia da apresentação ao professor. O app **não fica no ar o tempo todo**: o Fly.io cobra pelo tempo que o app existe (por segundo), então ele é criado pouco antes e apagado logo depois. No resto do tempo, a equipe testa com Docker local (veja o [README](README.md#testar-com-docker-sem-instalar-node)).
 
 - **Tempo para subir:** cerca de 10 minutos (faça com 30 minutos de folga).
-- **Custo:** só enquanto o app existir. Apague no fim.
+- **Custo:** só enquanto o app existir. Apague no fim. O Fly tem uma isenção mensal: com cartão cadastrado, se a fatura do mês fechar **abaixo de US$ 5,00**, o valor é abonado e nada é cobrado. Algumas horas de app (o ensaio e a apresentação) custam centavos, mas a isenção **não vale para um app esquecido ligado por dias**. Confirme a regra atual no painel do Fly (Billing).
 - **Onde rodar os comandos:** PowerShell, na **pasta raiz** do projeto (a que tem o `fly.toml`).
 
 > **Nunca** cole a connection string do banco no chat, em PR, em commit ou em print. Ela só entra no comando `fly secrets set`.
@@ -107,6 +107,6 @@ Confira:
 ```powershell
 fly apps list
 ```
-Não deve listar o `rumine-bruxos`. Depois olhe **Billing** em https://fly.io/dashboard para ver o valor cobrado.
+Não deve listar o `rumine-bruxos`. Depois abra **Billing** em https://fly.io/dashboard e confira o consumo do mês: deve ser de centavos, abaixo do limite de isenção (US$ 5,00). Se aparecer um valor maior que o esperado, confira de novo o `fly apps list` e apague o que estiver rodando.
 
 O banco (Neon) e o código (GitHub) continuam. As contas de demonstração têm senha pública, mas o banco só é acessado pelo app, que deixou de existir. Se quiser apagar o projeto do Neon, faça pelo painel deles.
