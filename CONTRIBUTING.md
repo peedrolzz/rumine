@@ -118,6 +118,15 @@ O usuário escolhe o valor (**R$ 5,00 a R$ 200,00**), recebe um código Pix e a 
 - **Migração nova:** rode `npx prisma migrate dev` em `backend/` (acrescenta `motivo_falha` e `codigo_pagamento` em `cobranca_recarga`).
 - **Limites e prazo:** constantes em `modules/recarga/servico.ts` (valor mínimo e máximo, 30 minutos para pagar, no máximo 3 recargas pendentes por pessoa).
 
+### QR Code de acesso (HU-06)
+
+O Usuário com cadastro aprovado abre **Início → Mostrar QR Code** (`/qr`) e mostra o código ao operador. Cadastro em análise ou rejeitado recebe 403 com o motivo (`CADASTRO_PENDENTE`).
+
+- **Token:** `POST /qr` devolve um JWT HS256 de **30 s** com `sub` (id interno), `jti` único e emissor `rumine`. **Nunca contém o RA**, e-mail nem nome. Código em `modules/acesso/qrToken.ts`, que já traz `verificar()` (assinatura, emissor, validade com 2 s de tolerância de relógio; recusa `alg: none`) para a leitura da HU-07.
+- **Uso único:** o `jti` é marcado como usado na leitura, pela restrição única de `leitura_acesso.token_jti` (HU-07/HU-08). Esta história só emite o token.
+- **Segredo:** `QR_SEGREDO` (mínimo 32 caracteres). Em produção é **obrigatório** (o servidor não sobe sem ele); em desenvolvimento há um padrão. Trocar o segredo invalida os QR em circulação.
+- **Tela:** o QR é gerado no navegador (`qrcode.react`), mostra a contagem regressiva, **renova sozinho 5 s antes de vencer** (e ao voltar para a aba), mantém a tela acesa quando o navegador permite e nunca deixa um QR vencido visível.
+
 ## 5. Fluxo de trabalho por história
 
 Cada história (HU) é um *issue* no quadro do GitHub Projects. O fluxo é sempre o mesmo:
