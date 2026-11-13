@@ -7,5 +7,30 @@ services:
       POSTGRES_DB: rumine
     ports: ["5432:5432"]
     volumes: [dbdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rumine -d rumine"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # App completo (API + telas) para TESTAR sem instalar Node: `docker compose up --build`.
+  # Para desenvolver, use só o banco (`docker compose up -d db`) e rode backend e frontend à parte.
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports: ["8080:8080"]
+    environment:
+      # "development": cookie sem Secure (o teste é em http://localhost), pagamento simulado ligado,
+      # segredos padrão de desenvolvimento e o link do e-mail simulado no log.
+      NODE_ENV: development
+      DATABASE_URL: postgresql://rumine:rumine@db:5432/rumine
+      FRONTEND_ORIGIN: http://localhost:8080
+    volumes: [dados:/data]
+    # Aplica as migrações, cria as contas de demonstração (idempotente) e sobe a API.
+    command: sh -c "npx prisma migrate deploy && npm run criar-demo && npx tsx src/server.ts"
+
 volumes:
   dbdata:
+  dados:

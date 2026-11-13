@@ -6,7 +6,7 @@ Este guia explica como obter o código, trabalhar em uma história e enviar suas
 
 - [Git](https://git-scm.com/downloads)
 - [Node.js](https://nodejs.org/) 26 (a mesma versão da CI, definida em `NODE_VERSION` no `.github/workflows/ci.yml`) e npm
-- [Docker](https://www.docker.com/) e Docker Compose (para o PostgreSQL local)
+- [Docker](https://www.docker.com/) e Docker Compose (para o PostgreSQL local e, se quiser só testar, para rodar o app inteiro)
 - Uma conta no GitHub com acesso ao repositório (peça ao P.O. para ser adicionado como colaborador)
 - Um editor com suporte a TypeScript (por exemplo, VS Code)
 
@@ -37,7 +37,19 @@ cd rumine
 
 ## 4. Instalar e executar
 
-Abra o **Docker Desktop** antes de começar. Use dois terminais: um para o backend e um para o frontend.
+Abra o **Docker Desktop** antes de começar.
+
+### Só testar o sistema (sem instalar Node)
+
+```bash
+docker compose up --build     # na raiz do projeto; depois abra http://localhost:8080
+```
+
+Sobe o banco e o app completo (API e telas), aplica as migrações e cria as contas de demonstração (veja "Contas de demonstração" abaixo e o [README](README.md#testar-com-docker-sem-instalar-node)). Cada pessoa tem o seu próprio banco local. Para recomeçar do zero: `docker compose down -v`. O app roda em modo `development` (cookie sem `Secure`, pagamento simulado ligado, e-mail simulado nos logs: `docker compose logs app`).
+
+### Desenvolver
+
+Use dois terminais: um para o backend e um para o frontend.
 
 ```bash
 # Na raiz do projeto: banco de dados (PostgreSQL)
@@ -69,7 +81,7 @@ O login é de verdade (HU-01): senha com **Argon2id** (`@node-rs/argon2`, que j�
 - **Com login de verdade:** deixe o `DEV_USUARIO` comentado e teste o fluxo completo:
   1. Abra http://localhost:5173/cadastro e cadastre-se com um e-mail `@alunos.utfpr.edu.br` (por enquanto é o único domínio aceito; nenhum e-mail real é enviado). A senha precisa de 8 caracteres, um número e um caractere especial.
   2. O e-mail é simulado: procure no **terminal do backend** a linha `[E-MAIL SIMULADO]`, abra o link de confirmação que aparece nela e toque em **Confirmar e-mail** (a confirmação só acontece no toque do botão).
-  3. Depois da confirmação, entre pela tela de login. A conta fica "pendente de aprovação" e o app mostra a tela "Cadastro em análise". Enquanto a tela do Admin (HU-20) não existe, ative a conta direto no banco e toque em **Atualizar**:
+  3. Depois da confirmação, entre pela tela de login. A conta fica "pendente de aprovação" e o app mostra a tela "Cadastro em análise". Envie a declaração de vínculo (HU-02) e peça a um Admin para aprovar em **Cadastros** (HU-20); depois toque em **Atualizar**. Para pular o fluxo em desenvolvimento, dá para ativar a conta direto no banco:
 
      ```bash
      docker exec rumine-db-1 psql -U rumine -d rumine -c "update usuario set status='ATIVO' where email='seu@alunos.utfpr.edu.br'"
@@ -88,9 +100,10 @@ Cada perfil vê só o que usa: **Usuário** (carteira, histórico, cardápio), *
 
 ### Contas de demonstração
 
-`npm run criar-demo` (em `backend/`) cria um Mestre, um Admin, um Operador, um aluno **aprovado** (saldo R$ 53,00, com histórico) e um aluno **em análise** (com declaração enviada), mais o cardápio de hoje. A senha é `Demo@2026` (troque com `DEMO_SENHA`). Os e-mails estão no [README](README.md).
+Cinco contas prontas (Mestre, Admin, Operador, um aluno **aprovado** com saldo R$ 53,00 e histórico, e um aluno **em análise** com declaração enviada), mais o preço da refeição e o cardápio de hoje. A senha é `Demo@2026` (troque com `DEMO_SENHA`). Os e-mails estão no [README](README.md#contas-de-demonstração).
 
-- **Idempotente:** o que já existe não é recriado nem alterado (nem a senha). Para recomeçar a demonstração, apague as contas `*.demo@*` do banco.
+- **Como criar:** o `docker compose up` já cria. Em desenvolvimento, rode `npm run criar-demo` em `backend/`.
+- **Idempotente:** o que já existe não é recriado nem alterado (nem a senha). Se o arquivo da declaração do aluno em análise sumiu (volume novo), o script o recoloca. Para recomeçar do zero, `docker compose down -v` (Docker) ou apague as contas `*.demo@*` do banco.
 - **Trava de segurança:** as senhas são conhecidas, então o script **recusa** rodar em produção, a menos que `PAGAMENTO_SIMULACAO_DEMO=true` (o mesmo interruptor do ambiente de demonstração). Nunca rode contra dados reais.
 - **Mesmo servidor da API:** a declaração de exemplo vai para o armazenamento privado (`ARMAZENAMENTO_DIR`); rode o script onde a API roda para o Admin conseguir abri-la.
 - Os dados ficam em `backend/src/modules/demo/contas.ts` (com testes); o script é `backend/scripts/criarDemo.ts`.
@@ -138,14 +151,15 @@ O Usuário com cadastro aprovado abre **Início → Mostrar QR Code** (`/qr`) e 
 - **Leitura e débito (HU-07/08):** o Operador lê o QR em `/operador/leitura` (câmera, ou colando o código) e o app chama `POST /leituras` (só Operador). Tudo acontece numa `$transaction` em `modules/acesso/leitura.ts`: confere assinatura e validade, o **uso único do `jti`** (restrição única de `leitura_acesso.token_jti` + checagem sob trava), cadastro ativo, preço e saldo; trava a carteira com `SELECT ... FOR UPDATE`, debita, grava `Transacao` (`DEBITO_REFEICAO`), `LeituraAcesso` e `Consumo`. Aluno PAE é liberado sem débito (consumo de R$ 0,00 sem transação). Leitura negada é resposta normal (200 com `liberado: false` e o motivo); a resposta traz só o nome do aluno, nunca o RA nem o saldo.
 - **Preço da refeição:** vem de `preco_refeicao` (câmpus + categoria, o mais recente com `vigenteDesde` até hoje). O `npm run seed` e o `npm run criar-demo` criam o do estudante (R$ 3,50). Sem preço a API responde 409 "preço não configurado" e **não consome** o código.
 
-### Publicação (Fly.io)
+### Publicação (Fly.io) e apresentação
 
-O passo a passo está no [README](README.md#publicar-no-flyio). Resumo do que existe e por quê:
+O app publicado existe **só na apresentação**, para não gerar custo (o Fly.io não tem plano grátis): sobe pouco antes e é apagado logo depois. O passo a passo, com checklist e erros comuns, está em [APRESENTACAO.md](APRESENTACAO.md). O que existe no repositório e por quê:
 
 - **App único:** a API serve o app compilado (`FRONTEND_DIST`, em `shared/frontendEstatico.ts`). O navegador navegando (`Accept: text/html`) recebe o `index.html`, então telas e rotas de mesmo caminho (`/historico`, `/qr`) convivem; as chamadas `fetch` seguem para a API. Em desenvolvimento nada muda: o Vite serve o front.
-- **Imagem:** `Dockerfile` em dois estágios; o backend roda com `tsx` (não há etapa de build). `docker-entrypoint.sh` prepara o volume `/data` e passa a rodar como usuário comum. `.gitattributes` mantém o `.sh` com final de linha LF.
-- **Migrações:** `release_command = "npx prisma migrate deploy"` no `fly.toml`. Migração nova entra no deploy sozinha.
+- **Imagem:** `Dockerfile` em dois estágios; o backend roda com `tsx` (não há etapa de build). `docker-entrypoint.sh` prepara o volume `/data` e passa a rodar como usuário comum. `.gitattributes` mantém o `.sh` com final de linha LF. O mesmo `Dockerfile` serve ao `docker compose` e ao Fly.
+- **Migrações:** no Fly, `release_command = "npx prisma migrate deploy"` (`fly.toml`); no Docker local, o `command` do serviço `app`. Migração nova entra sozinha nos dois.
 - **Variáveis de produção:** segredos `DATABASE_URL`, `PAGAMENTO_WEBHOOK_SEGREDO` e `QR_SEGREDO`; o resto fica no `fly.toml`. A CI confere que a imagem compila.
+- **Desvio do ADR-009:** a demonstração usa **Neon** (PostgreSQL gratuito) no lugar do Fly Postgres, por restrição de custo. O estilo da arquitetura não muda: continua PostgreSQL com Prisma, em contêiner Docker.
 
 ## 5. Fluxo de trabalho por história
 
