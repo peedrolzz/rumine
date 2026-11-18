@@ -82,6 +82,14 @@ Dicas:
 - A câmera exige HTTPS (o Fly já fornece). Use o celular para ler o QR que está na tela do computador, ou dois celulares.
 - Cadastro de aluno novo: o e-mail é **simulado**; o link de confirmação aparece em `fly logs --app rumine-bruxos`.
 
+## Repetir a demonstração do aluno em análise
+
+Depois que o Admin aprova ou rejeita o `pendente.demo`, a conta deixa de estar "em análise". Para refazer só ela (as outras contas e o saldo do aluno não mudam):
+```powershell
+fly ssh console --app rumine-bruxos -C "runuser -u node -- npm run criar-demo -- --refazer-pendente"
+```
+Esperado: `pendente.demo@...: apagada para ser refeita` e depois `criada`. Pode repetir quantas vezes precisar. Exige que o app esteja na versão que tem esse parâmetro (`fly deploy --app rumine-bruxos` se ele foi publicado antes).
+
 ## Se der erro ao subir
 
 | O que aparece | O que fazer |

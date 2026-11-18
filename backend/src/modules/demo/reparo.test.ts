@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { garantirArquivoDeclaracao } from "./reparo.js";
+import { garantirArquivoDeclaracao, pediuRefazerPendente } from "./reparo.js";
 
 const CHAVE = "f07b9b5c-d755-4a44-b070-ddf41be73b83";
 const PDF = Buffer.from("%PDF-1.4 demo");
@@ -34,5 +34,13 @@ describe("garantirArquivoDeclaracao", () => {
     const a = armazenamentoFalso();
     await garantirArquivoDeclaracao(a, CHAVE, PDF);
     expect(await garantirArquivoDeclaracao(a, CHAVE, PDF)).toBe(false);
+  });
+});
+
+describe("pediuRefazerPendente", () => {
+  it("só liga com o parâmetro exato", () => {
+    expect(pediuRefazerPendente(["node", "criarDemo.ts", "--refazer-pendente"])).toBe(true);
+    expect(pediuRefazerPendente(["node", "criarDemo.ts"])).toBe(false);
+    expect(pediuRefazerPendente(["node", "criarDemo.ts", "--refazer"])).toBe(false);
   });
 });

@@ -14,3 +14,6 @@ export async function garantirArquivoDeclaracao(
   await armazenamento.salvar(chave, conteudo);
   return true;
 }
+
+/** O script foi chamado com `--refazer-pendente`? */
+export const pediuRefazerPendente = (argv: readonly string[]): boolean => argv.includes("--refazer-pendente");

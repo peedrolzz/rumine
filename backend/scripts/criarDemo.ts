@@ -1,5 +1,6 @@
 // Cria as contas e os dados de DEMONSTRAÇÃO (para quem vai avaliar o sistema). Uso, em backend/:
 //   npm run criar-demo
+//   npm run criar-demo -- --refazer-pendente   (apaga e recria SÓ o aluno em análise, para repetir a demonstração)
 // Idempotente: o que já existe não é recriado nem alterado. As contas têm senha CONHECIDA, então
 // o script só roda fora de produção ou no ambiente de demonstração (PAGAMENTO_SIMULACAO_DEMO=true).
 // Rode no mesmo servidor/disco da API: a declaração do aluno em análise fica no armazenamento privado.
@@ -10,7 +11,7 @@ import { criarArmazenamentoEmDisco } from "../src/shared/armazenamento.js";
 import { hojeNoBrasil } from "../src/shared/data.js";
 import { hasherArgon2 } from "../src/modules/identidade/senha.js";
 import { primeiraRegraQuebrada } from "../src/modules/identidade/esquemas.js";
-import { garantirArquivoDeclaracao } from "../src/modules/demo/reparo.js";
+import { garantirArquivoDeclaracao, pediuRefazerPendente } from "../src/modules/demo/reparo.js";
 import {
   CARDAPIO_DEMO,
   CONTAS_DEMO,
@@ -40,6 +41,28 @@ async function principal() {
 
   const campus = await prisma.campus.upsert({ where: { nome: "Dois Vizinhos" }, create: { nome: "Dois Vizinhos" }, update: {} });
   const situacao: string[] = [];
+
+  // Repetir a demonstração: o aluno em análise já foi aprovado ou rejeitado? Apaga só essa conta (e o
+  // que depende dela) e deixa o fluxo abaixo recriá-la "em análise", com a declaração.
+  if (pediuRefazerPendente(process.argv)) {
+    const email = CONTAS_DEMO.find((c) => c.chave === "alunoPendente")!.email;
+    const alvo = await prisma.usuario.findUnique({ where: { email }, select: { id: true } });
+    if (alvo) {
+      const id = alvo.id;
+      await prisma.$transaction(async (tx) => {
+        const carteira = await tx.carteira.findUnique({ where: { usuarioId: id }, select: { id: true } });
+        if (carteira) await tx.transacao.deleteMany({ where: { carteiraId: carteira.id } });
+        await tx.carteira.deleteMany({ where: { usuarioId: id } });
+        await tx.analiseCadastro.deleteMany({ where: { usuarioId: id } });
+        await tx.declaracao.deleteMany({ where: { usuarioId: id } });
+        await tx.logAuditoria.deleteMany({ where: { entidadeId: id } });
+        await tx.sessao.deleteMany({ where: { usuarioId: id } });
+        await tx.tokenEmail.deleteMany({ where: { usuarioId: id } });
+        await tx.usuario.delete({ where: { id } });
+      });
+      situacao.push(`${email}: apagada para ser refeita`);
+    }
+  }
 
 // Preço da refeição do estudante: sem ele a leitura do QR responde "preço não configurado".
 const temPreco = await prisma.precoRefeicao.findFirst({ where: { campusId: campus.id, categoriaPreco: "ESTUDANTE" } });

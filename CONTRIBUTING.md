@@ -105,6 +105,7 @@ Cinco contas prontas (Mestre, Admin, Operador, um aluno **aprovado** com saldo R
 - **Como criar:** o `docker compose up` já cria. Em desenvolvimento, rode `npm run criar-demo` em `backend/`.
 - **Idempotente:** o que já existe não é recriado nem alterado (nem a senha). Se o arquivo da declaração do aluno em análise sumiu (volume novo), o script o recoloca. Para recomeçar do zero, `docker compose down -v` (Docker) ou apague as contas `*.demo@*` do banco.
 - **Trava de segurança:** as senhas são conhecidas, então o script **recusa** rodar em produção, a menos que `PAGAMENTO_SIMULACAO_DEMO=true` (o mesmo interruptor do ambiente de demonstração). Nunca rode contra dados reais.
+- **Repetir o aluno em análise:** `npm run criar-demo -- --refazer-pendente` apaga e recria só o `pendente.demo` (útil depois que o Admin o aprovou ou rejeitou). Não mexe nas outras contas.
 - **Mesmo servidor da API:** a declaração de exemplo vai para o armazenamento privado (`ARMAZENAMENTO_DIR`); rode o script onde a API roda para o Admin conseguir abri-la.
 - Os dados ficam em `backend/src/modules/demo/contas.ts` (com testes); o script é `backend/scripts/criarDemo.ts`.
 
